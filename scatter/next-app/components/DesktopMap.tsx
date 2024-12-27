@@ -5,16 +5,19 @@ import {DesktopFullscreenFavorites} from '@/components/DesktopFullscreenFavorite
 import {DesktopFullscreenFilter} from '@/components/DesktopFullscreenFilter'
 import {DesktopFullscreenTools} from '@/components/DesktopFullscreenTools'
 import Tooltip from '@/components/DesktopTooltip'
-import useAutoResize from '@/hooks/useAutoResize'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useFilter from '@/hooks/useFilter'
 import useInferredFeatures from '@/hooks/useInferredFeatures'
-import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
-import useVoronoiFinder from '@/hooks/useVoronoiFinder'
-import useZoom from '@/hooks/useZoom'
+import {useScatterMap, GestureEvent, ZoomEvents} from '@/hooks/useScatterMap'
 import {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 import {mean} from '@/utils'
+
+type ZoomState = {
+  scale: number
+  x: number
+  y: number
+}
 
 type TooltipPosition = {
   x: number
@@ -166,15 +169,16 @@ function DesktopMap(props: MapProps) {
     config,
     propertyMap
   } = props
-  const {dataHasVotes} = useInferredFeatures(props)
-  const dimensions = useAutoResize(props.width, props.height)
-  const clusters = useRelativePositions(props.clusters)
-  const zoom = useZoom(dimensions, fullScreen)
 
-  // for vote filter
-  const [minVotes, setMinVotes] = useState(0)
-  const [minConsensus, setMinConsensus] = useState(50)
-  const voteFilter = useFilter(clusters, comments, minVotes, minConsensus, dataHasVotes)
+  const [
+    {tooltip, expanded, showLabels, minVotes, minConsensus, dimensions, clusters, zoom, findPoint},
+    {setTooltip, setExpanded, setShowLabels, setMinVotes, setMinConsensus}
+  ] = useScatterMap({...props, fullScreen, onlyCluster, color})
+
+  const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition>({
+    x: 0,
+    y: 0,
+  })
 
   // text and property filter
   const [highlightText, setHighlightText] = useState<string>('')
@@ -203,23 +207,8 @@ function DesktopMap(props: MapProps) {
     return true
   }
 
-  const findPoint = useVoronoiFinder(
-    clusters,
-    props.comments,
-    color,
-    zoom,
-    dimensions,
-    onlyCluster,
-    undefined,
-    filterFn
-  )
-  const [tooltip, setTooltip] = useState<Point | null>(null)
-  const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition>({
-    x: 0,
-    y: 0,
-  })
-  const [expanded, setExpanded] = useState(false)
-  const [showLabels, setShowLabels] = useState(true)
+  const {dataHasVotes} = useInferredFeatures(props)
+  const voteFilter = useFilter(clusters, comments, minVotes, minConsensus, dataHasVotes)
   const [showRatio, setShowRatio] = useState(false)
   const [showFavorites, setShowFavorites] = useState(false)
   const [showTitle, setShowTitle] = useState(false)
@@ -230,6 +219,7 @@ function DesktopMap(props: MapProps) {
     .reduce((a, b) => a + b, 0)
 
   const {scaleX, scaleY, width, height} = dimensions || {}
+  if (!scaleX || !scaleY || !zoom) return null
   const {t} = translator
 
   const favoritesKey = `favorites_${window.location.href}`

@@ -1,17 +1,20 @@
 import React, {useEffect, useState} from 'react'
-import {useGesture} from 'react-use-gesture'
+import {useGesture} from '@use-gesture/react'
 import CustomTitle from '@/components/CustomTitle'
 import Tooltip from '@/components/MobileTooltip'
-import useAutoResize from '@/hooks/useAutoResize'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useFilter from '@/hooks/useFilter'
 import useInferredFeatures from '@/hooks/useInferredFeatures'
-import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
-import useVoronoiFinder from '@/hooks/useVoronoiFinder'
-import useZoom from '@/hooks/useZoom'
+import {useScatterMap, GestureEvent, ZoomEvents} from '@/hooks/useScatterMap'
 import {Point, Result} from '@/types'
 import {isTouchDevice, mean} from '@/utils'
+
+type ZoomState = {
+  scale: number
+  x: number
+  y: number
+}
 
 type MapProps = Result & {
   width?: number,
@@ -32,20 +35,16 @@ type MapProps = Result & {
 
 function MobileMap(props: MapProps) {
   const {fullScreen, back, onlyCluster, comments, translator, color, config} = props
-  const {dataHasVotes} = useInferredFeatures(props)
-  const dimensions = useAutoResize(props.width, props.height)
-  const clusters = useRelativePositions(props.clusters)
-  const zoom = useZoom(dimensions, fullScreen)
-  const findPoint = useVoronoiFinder(clusters, props.comments, color, zoom, dimensions, onlyCluster)
-  const [tooltip, setTooltip] = useState<Point | null>(null)
-  const [expanded, setExpanded] = useState(false)
-  const [showLabels, setShowLabels] = useState(true)
+  const [
+    {tooltip, expanded, showLabels, minVotes, minConsensus, dimensions, clusters, zoom, findPoint},
+    {setTooltip, setExpanded, setShowLabels, setMinVotes, setMinConsensus}
+  ] = useScatterMap({...props, fullScreen, onlyCluster, color})
   const [showFilters, setShowFilters] = useState(false)
-  const [minVotes, setMinVotes] = useState(0)
-  const [minConsensus, setMinConsensus] = useState(50)
+  const {dataHasVotes} = useInferredFeatures(props)
   const voteFilter = useFilter(clusters, comments, minVotes, minConsensus, dataHasVotes)
 
   const {scaleX, scaleY, width, height} = dimensions || {}
+  if (!scaleX || !scaleY || !zoom) return null
   const {t} = translator
 
   const [isTouch, setIsTouch] = useState(false)
@@ -194,7 +193,7 @@ function MobileMap(props: MapProps) {
             </button>
             <button
               className="m-2 underline"
-              onClick={() => setShowLabels(x => !x)}>
+              onClick={() => setShowLabels(prev => !prev)}>
               {showLabels ? t('Hide labels') : t('Show labels')}
             </button>
             {zoom.reset && (
