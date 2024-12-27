@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import patch, MagicMock
+import httpx
+from unittest.mock import patch, MagicMock, PropertyMock
 import os
 from scatter.pipeline.services import llm
 
@@ -21,34 +22,19 @@ def cleanup_env():
             os.environ[var] = value
 
 def create_mock_response(content):
-    """Create a mock response object with the correct structure."""
-    class MockMessage:
-        def __init__(self, content):
-            self.content = content
+    """Create a mock response object with the correct OpenAI API response structure."""
+    return type("MockResponse", (), {
+        "choices": [
+            type("MockChoice", (), {
+                "message": type("MockMessage", (), {"content": content})
+            })
+        ]
+    })()
 
-    class MockChoice:
-        def __init__(self, message):
-            self.message = message
 
-    class MockResponse:
-        def __init__(self, choices):
-            self.choices = choices
-
-    return MockResponse([MockChoice(MockMessage(content))])
-
-@patch("httpx.AsyncClient")
-@patch("httpx.Client")
-@patch("openai._base_client.AsyncHttpxClientWrapper")
-@patch("openai._base_client.SyncHttpxClientWrapper")
 @patch("openai.OpenAI")
-def test_request_to_openai(mock_openai_class, mock_http_wrapper, mock_async_wrapper,
-                         mock_http_client, mock_async_client):
-    # Set up mock clients and response
-    mock_http_client.return_value = MagicMock()
-    mock_async_client.return_value = MagicMock()
-    mock_http_wrapper.return_value = MagicMock()
-    mock_async_wrapper.return_value = MagicMock()
-    
+def test_request_to_openai(mock_openai_class):
+    # Set up mock client with proper structure
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = create_mock_response("Mocked Response")
     mock_openai_class.return_value = mock_client
@@ -60,21 +46,30 @@ def test_request_to_openai(mock_openai_class, mock_http_wrapper, mock_async_wrap
     result = llm.request_to_openai(messages)
     assert result == "Mocked Response"
 
-@patch("httpx.AsyncClient")
-@patch("httpx.Client")
-@patch("openai._base_client.AsyncHttpxClientWrapper")
-@patch("openai._base_client.SyncHttpxClientWrapper")
-@patch("openai.AzureOpenAI")
-def test_request_to_azure_openai(mock_azure_class, mock_http_wrapper, mock_async_wrapper,
-                               mock_http_client, mock_async_client):
-    # Set up mock clients and response
-    mock_http_client.return_value = MagicMock()
-    mock_async_client.return_value = MagicMock()
-    mock_http_wrapper.return_value = MagicMock()
-    mock_async_wrapper.return_value = MagicMock()
+@patch("scatter.pipeline.services.llm.AzureOpenAI")
+def test_request_to_azure_openai(mock_azure_class):
+    # Set up mock response exactly as shown in example
+    mock_response = type("MockResponse", (), {
+        "choices": [
+            type("MockChoice", (), {
+                "message": type("MockMessage", (), {"content": "Mocked Azure Response"})
+            })
+        ]
+    })()
     
+    # Set up mock completions
+    mock_completions = MagicMock()
+    mock_completions.create.return_value = mock_response
+    
+    # Set up mock chat
+    mock_chat = MagicMock()
+    mock_chat.completions = mock_completions
+    
+    # Set up mock client
     mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = create_mock_response("Mocked Azure Response")
+    mock_client.chat = mock_chat
+    
+    # Return mock client directly without initialization
     mock_azure_class.return_value = mock_client
 
     # Set required environment variables

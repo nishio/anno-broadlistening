@@ -2,8 +2,7 @@ import os
 
 import pandas as pd
 from dotenv import load_dotenv
-from langchain.embeddings import OpenAIEmbeddings
-from langchain_openai import AzureOpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, AzureOpenAIEmbeddings
 from tqdm import tqdm
 
 load_dotenv("../../.env")
@@ -26,10 +25,14 @@ def embed_by_openai(args, model):
         embeds = AzureOpenAIEmbeddings(
             model=model,
             azure_endpoint=os.getenv("AZURE_EMBEDDING_ENDPOINT"),
+            openai_api_key=os.getenv("AZURE_OPENAI_API_KEY")
         ).embed_documents(args)
     else:
         _validate_model(model)
-        embeds = OpenAIEmbeddings(model=model).embed_documents(args)
+        embeds = OpenAIEmbeddings(
+            model=model,
+            openai_api_key=os.getenv("OPENAI_API_KEY")
+        ).embed_documents(args)
     return embeds
 
 

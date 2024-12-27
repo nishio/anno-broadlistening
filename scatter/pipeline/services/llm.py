@@ -12,9 +12,11 @@ def request_to_openai(
     model: str = "gpt-4",
     is_json: bool = False,
 ) -> dict:
-    openai.api_type = "openai"
+    client = openai.OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY")
+    )
     response_format = {"type": "json_object"} if is_json else None
-    response = openai.chat.completions.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=0,
@@ -35,7 +37,7 @@ def request_to_azure_openai(
     client = AzureOpenAI(
         api_key=os.getenv("AZURE_OPENAI_API_KEY"),
         api_version="2024-02-01",
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
 
     if is_json:

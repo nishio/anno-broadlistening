@@ -53,9 +53,40 @@ def test_embed_by_openai(mock_azure_embeddings, mock_openai_embeddings,
     mock_openai_embeddings.return_value = mock_openai_instance
     mock_azure_embeddings.return_value = mock_azure_instance
     
-    # Set up mock responses
-    mock_openai_instance.embed_documents.return_value = ["openai vector"]
-    mock_azure_instance.embed_documents.return_value = ["azure vector"]
+    # Set up mock responses with proper embedding format
+    class MockEmbeddingResponse:
+        def __init__(self, embedding):
+            self.embedding = embedding
+            self.index = 0
+            self.object = "embedding"
+
+        def model_dump(self):
+            return {
+                "embedding": self.embedding,
+                "index": self.index,
+                "object": self.object
+            }
+
+    class MockResponse:
+        def __init__(self, data):
+            self.data = data
+
+        def model_dump(self):
+            return {"data": [d.model_dump() for d in self.data]}
+
+    # Set up OpenAI embeddings instance with proper configuration
+    mock_openai_instance._invocation_params = {"model": "text-embedding-3-large"}
+    mock_openai_instance.client = mock_openai_client.return_value.embeddings
+    mock_openai_instance.client.create.return_value = MockResponse([
+        MockEmbeddingResponse([0.1, 0.2, 0.3])
+    ])
+
+    # Set up Azure embeddings instance with proper configuration
+    mock_azure_instance._invocation_params = {"model": "text-embedding-3-large"}
+    mock_azure_instance.client = mock_azure_client.return_value.embeddings
+    mock_azure_instance.client.create.return_value = MockResponse([
+        MockEmbeddingResponse([0.4, 0.5, 0.6])
+    ])
     
     # Set required environment variables
     os.environ["OPENAI_API_KEY"] = "dummy_key"
@@ -68,7 +99,8 @@ def test_embed_by_openai(mock_azure_embeddings, mock_openai_embeddings,
     os.environ["OPENAI_API_KEY"] = "dummy_key"  # Required by OpenAIEmbeddings
 
     vectors = embed_by_openai(["doc1"], model="text-embedding-3-large")
-    assert vectors == ["openai vector"]
+    assert len(vectors) == 1  # One document
+    assert len(vectors[0]) == 3  # Three dimensions in the embedding
 
     # Test Azure path (Azure ON)
     os.environ["USE_AZURE"] = "1"
@@ -76,7 +108,8 @@ def test_embed_by_openai(mock_azure_embeddings, mock_openai_embeddings,
     os.environ["AZURE_OPENAI_ENDPOINT"] = "dummy_endpoint"
 
     vectors = embed_by_openai(["doc1"], model="text-embedding-3-large")
-    assert vectors == ["azure vector"]
+    assert len(vectors) == 1  # One document
+    assert len(vectors[0]) == 3  # Three dimensions in the embedding
 
     # Environment cleanup handled by fixture
 
