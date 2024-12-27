@@ -421,7 +421,15 @@ function DesktopMap(props: MapProps) {
 
     console.log(`Tap event at (${clientX}, ${clientY})`)
 
-    const clickedPoint = findPoint({clientX, clientY})
+    // Create a synthetic event with required properties for point finding
+    const syntheticEvent = {
+      target: document.querySelector('svg'),
+      clientX,
+      clientY,
+      touches: [],
+      changedTouches: []
+    } as unknown as React.MouseEvent<SVGSVGElement>
+    const clickedPoint = findPoint(syntheticEvent)
     if (clickedPoint) {
       const newPosition = calculateTooltipPosition(clientX, clientY)
       console.log('Tapped point found:', clickedPoint.data)

@@ -6,7 +6,13 @@ import useFilter from '@/hooks/useFilter'
 import useInferredFeatures from '@/hooks/useInferredFeatures'
 import useRelativePositions from '@/hooks/useRelativePositions'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
-import useZoom, {ZoomState} from '@/hooks/useZoom'
+import useZoom from '@/hooks/useZoom'
+
+type ZoomState = {
+  scale: number
+  panx: number
+  pany: number
+}
 import {mean} from '@/utils'
 
 export type GestureEvent = MouseEvent<SVGSVGElement> | TouchEvent<SVGSVGElement>
