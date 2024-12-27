@@ -98,6 +98,7 @@ function MobileMap(props: MapProps) {
           width={width!}
           height={height!}
           {...bind()}
+          {...props}
           {...zoom.events({
             onClick: (e: any) => {
               if (tooltip && !expanded) {

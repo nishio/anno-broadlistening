@@ -91,6 +91,7 @@ function Report(props: ReportProps) {
                 color={color}
                 width={reportWidth}
                 height={450}
+                data-scatter-plot="main"
               />
               <button
                 className="my-2 underline"
@@ -138,6 +139,7 @@ function Report(props: ReportProps) {
                       width={reportWidth}
                       height={350}
                       onlyCluster={t(cluster.cluster_id)}
+                      data-scatter-plot={`cluster-${cluster.cluster_id}`}
                     />
                     <button
                       className="my-2 underline"

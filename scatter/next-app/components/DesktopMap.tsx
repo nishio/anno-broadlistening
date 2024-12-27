@@ -500,6 +500,7 @@ function DesktopMap(props: MapProps) {
             width={width!}
             height={height!}
             {...bind()}
+            {...props}
             {...zoom.events({
               onClick: handleClick,
               onMove: handleMove,
