@@ -1,17 +1,11 @@
-import type {UserGestureConfig} from '@use-gesture/react'
 import {useGesture} from '@use-gesture/react'
 import React, {useEffect, useState} from 'react'
 
-type ZoomType = {
-  zoomX: (x: number) => number;
-  zoomY: (y: number) => number;
-  dragging: boolean;
-  events: (config: UserGestureConfig) => any;
-  enable: () => void;
-  disable: () => void;
-}
+// Components
 import CustomTitle from '@/components/CustomTitle'
 import Tooltip from '@/components/MobileTooltip'
+
+// Hooks
 import useAutoResize from '@/hooks/useAutoResize'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useFilter from '@/hooks/useFilter'
@@ -20,6 +14,8 @@ import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
+
+// Types and Utils
 import {Point, Result} from '@/types'
 import {isTouchDevice, mean} from '@/utils'
 
@@ -109,7 +105,7 @@ function MobileMap(props: MapProps) {
           height={height!}
           {...bind()}
           {...zoom.events({
-            onClick: (e: MouseEvent) => {
+            onClick: (e: React.MouseEvent) => {
               if (tooltip && !expanded) {
                 setExpanded(true)
                 zoom.disable()
@@ -119,7 +115,7 @@ function MobileMap(props: MapProps) {
                 zoom.enable()
               }
             },
-            onMove: (e: any) => {
+            onMove: (e: React.MouseEvent) => {
               if (!expanded) {
                 setTooltip(findPoint(e)?.data || null)
               }
@@ -210,7 +206,11 @@ function MobileMap(props: MapProps) {
             {zoom.reset && (
               <button
                 className="m-2 underline"
-                onClick={zoom.reset as any}
+                onClick={() => {
+                  if (typeof zoom.reset === 'function') {
+                    (zoom.reset as () => void)()
+                  }
+                }}
               >
                 {t('Reset zoom')}
               </button>
