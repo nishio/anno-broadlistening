@@ -1,5 +1,15 @@
-import React, {useEffect, useState} from 'react'
-import {useGesture} from 'react-use-gesture'
+import React, {useEffect, useState, SVGProps} from 'react'
+import {useGesture} from '@use-gesture/react'
+import type {UserGestureConfig} from '@use-gesture/react'
+
+type ZoomType = {
+  zoomX: (x: number) => number;
+  zoomY: (y: number) => number;
+  dragging: boolean;
+  events: (config: UserGestureConfig) => any;
+  enable: () => void;
+  disable: () => void;
+}
 import CustomTitle from '@/components/CustomTitle'
 import Tooltip from '@/components/MobileTooltip'
 import useAutoResize from '@/hooks/useAutoResize'
@@ -97,8 +107,7 @@ function MobileMap(props: MapProps) {
         <svg
           width={width!}
           height={height!}
-          {...bind()}
-          {...props}
+          {...(bind() as any)}
           {...zoom.events({
             onClick: (e: any) => {
               if (tooltip && !expanded) {

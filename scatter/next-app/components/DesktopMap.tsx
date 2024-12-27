@@ -1,5 +1,21 @@
 import {useGesture} from '@use-gesture/react'
-import React, {useEffect, useRef, useState} from 'react'
+import React, {useEffect, useRef, useState, SVGProps, MouseEvent} from 'react'
+import type {UserGestureConfig} from '@use-gesture/react'
+
+type GestureEvent = {
+  event: MouseEvent;
+  xy: number[];
+  initial: number[];
+  delta: number[];
+  offset: number[];
+};
+
+type ZoomType = {
+  zoomX: (x: number) => number;
+  zoomY: (y: number) => number;
+  dragging: boolean;
+  events: (config: UserGestureConfig) => any;
+}
 import CustomTitle from '@/components/CustomTitle'
 import {DesktopFullscreenFavorites} from '@/components/DesktopFullscreenFavorites'
 import {DesktopFullscreenFilter} from '@/components/DesktopFullscreenFilter'
@@ -43,12 +59,12 @@ function DotCircles(
   clusters: Cluster[],
   expanded: boolean,
   tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
+  zoom: ZoomType,
+  scaleX: (x: number) => number,
+  scaleY: (y: number) => number,
+  color: ColorFunc,
   onlyCluster: string | undefined,
-  voteFilter: any,
+  voteFilter: { filter: (arg: Argument) => boolean },
   filterFn: (arg: Argument) => boolean
 ) {
 
@@ -499,8 +515,7 @@ function DesktopMap(props: MapProps) {
           <svg
             width={width!}
             height={height!}
-            {...bind()}
-            {...props}
+            {...(bind() as any)}
             {...zoom.events({
               onClick: handleClick,
               onMove: handleMove,
