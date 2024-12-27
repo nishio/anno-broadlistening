@@ -74,7 +74,7 @@ def cluster_embeddings(
 ):
     # (!) we import the following modules dynamically for a reason
     # (they are slow to load and not required for all pipelines)
-    SpectralClustering = import_module("sklearn.cluster").SpectralClustering
+    KMeans = import_module("sklearn.cluster").KMeans
     HDBSCAN = import_module("hdbscan").HDBSCAN
     UMAP = import_module("umap").UMAP
     CountVectorizer = import_module("sklearn.feature_extraction.text").CountVectorizer
@@ -97,16 +97,16 @@ def cluster_embeddings(
     # Fit the topic model.
     _, __ = topic_model.fit_transform(docs, embeddings=embeddings)
 
-    n_samples = len(embeddings)
-    n_neighbors = min(n_samples - 1, 10)
-    spectral_model = SpectralClustering(
-        n_clusters=n_topics,
-        affinity="nearest_neighbors",
-        n_neighbors=n_neighbors,  # Use the modified n_neighbors
-        random_state=42,
-    )
+    # Transform embeddings to 2D using UMAP
     umap_embeds = umap_model.fit_transform(embeddings)
-    cluster_labels = spectral_model.fit_predict(umap_embeds)
+    
+    # Use k-means for initial clustering (100 clusters by default)
+    kmeans_model = KMeans(
+        n_clusters=100,  # Default to 100 clusters as requested
+        random_state=42,
+        n_init="auto"  # Use the new recommended default
+    )
+    cluster_labels = kmeans_model.fit_predict(umap_embeds)
 
     result = topic_model.get_document_info(
         docs=docs,
