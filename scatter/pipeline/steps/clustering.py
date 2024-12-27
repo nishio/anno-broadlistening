@@ -64,6 +64,59 @@ def tokenize_japanese(text):
     ]
 
 
+def compute_cluster_distance(cluster1_docs, cluster2_docs):
+    """Compute a preliminary distance score between two clusters.
+    This is a placeholder implementation that can be enhanced with LLM-based scoring later.
+    """
+    # For now, use a simple heuristic based on the number of common words
+    words1 = set(" ".join(cluster1_docs).split())
+    words2 = set(" ".join(cluster2_docs).split())
+    common_words = len(words1.intersection(words2))
+    total_words = len(words1.union(words2))
+    return 1.0 - (common_words / total_words if total_words > 0 else 0)
+
+def merge_adjacent_clusters(cluster_labels, adjacency, docs, n_clusters=8):
+    """Merge adjacent clusters based on their similarity until we reach the desired number of clusters."""
+    current_labels = cluster_labels.copy()
+    n_current_clusters = len(set(current_labels))
+    
+    # Create a mapping of cluster IDs to their documents
+    cluster_docs = {}
+    for doc_idx, cluster_id in enumerate(current_labels):
+        if cluster_id not in cluster_docs:
+            cluster_docs[cluster_id] = []
+        cluster_docs[cluster_id].append(docs[doc_idx])
+    
+    # While we have more clusters than desired
+    while n_current_clusters > n_clusters:
+        # Find the most similar adjacent clusters
+        min_distance = float('inf')
+        clusters_to_merge = None
+        
+        for c1, c2 in adjacency:
+            # Skip if either cluster no longer exists (was merged)
+            if c1 not in cluster_docs or c2 not in cluster_docs:
+                continue
+                
+            distance = compute_cluster_distance(cluster_docs[c1], cluster_docs[c2])
+            if distance < min_distance:
+                min_distance = distance
+                clusters_to_merge = (c1, c2)
+        
+        if clusters_to_merge is None:
+            break
+            
+        # Merge the clusters
+        c1, c2 = clusters_to_merge
+        # Merge documents
+        cluster_docs[c1].extend(cluster_docs[c2])
+        del cluster_docs[c2]
+        # Update labels
+        current_labels[current_labels == c2] = c1
+        n_current_clusters -= 1
+        
+    return current_labels
+
 def cluster_embeddings(
     docs,
     embeddings,
@@ -114,6 +167,9 @@ def cluster_embeddings(
     adjacency = set()
     for simplex in vor.ridge_points:
         adjacency.add(tuple(sorted(simplex)))
+    
+    # Merge clusters based on similarity until we reach the desired number
+    final_labels = merge_adjacent_clusters(cluster_labels, adjacency, docs, n_topics)
 
     result = topic_model.get_document_info(
         docs=docs,
@@ -126,6 +182,6 @@ def cluster_embeddings(
 
     result.columns = [c.lower() for c in result.columns]
     result = result[["arg-id", "x", "y", "probability"]]
-    result["cluster-id"] = cluster_labels
+    result["cluster-id"] = final_labels
 
     return result
