@@ -37,6 +37,7 @@ type MapProps = Result & {
     question?: string
   }
   propertyMap: PropertyMap
+  onClusterGranularityChange?: (granularity: number) => void
 }
 
 function DotCircles(
@@ -224,6 +225,7 @@ function DesktopMap(props: MapProps) {
   const [showFavorites, setShowFavorites] = useState(false)
   const [showTitle, setShowTitle] = useState(false)
   const [showFilterSettings, setShowFilterSettings] = useState(false)
+  const [clusterGranularity, setClusterGranularity] = useState(8) // Default to 8 clusters
 
   const totalArgs = clusters
     .map((c) => c.arguments.length)
@@ -255,6 +257,13 @@ function DesktopMap(props: MapProps) {
       console.error('お気に入りの保存に失敗しました:', error)
     }
   }, [favorites])
+
+  // Handle cluster granularity changes
+  useEffect(() => {
+    if (props.onClusterGranularityChange) {
+      props.onClusterGranularityChange(clusterGranularity)
+    }
+  }, [clusterGranularity, props.onClusterGranularityChange])
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -601,6 +610,8 @@ function DesktopMap(props: MapProps) {
             setShowRatio={setShowRatio}
             showFavorites={showFavorites}
             setShowFavorites={setShowFavorites}
+            clusterGranularity={clusterGranularity}
+            setClusterGranularity={setClusterGranularity}
           />
         )}
         {/* フィルター一覧 */}
