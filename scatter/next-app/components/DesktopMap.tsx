@@ -505,6 +505,7 @@ function DesktopMap(props: MapProps) {
           <svg
             width={width!}
             height={height!}
+            data-scatter-plot="main"
             {...bind()}
             {...zoom.events({
               onClick: (e: React.MouseEvent<Element, MouseEvent>) => handleClick(e),
