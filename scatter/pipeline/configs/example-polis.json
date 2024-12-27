@@ -8,7 +8,7 @@
       "limit": 12
     },
     "clustering": {
-      "clusters": 3
+      "clusters": 50
     },
     "intro": "このAI生成レポートは、Recursive Publicチームが実施したPolis協議のデータに基づいています。"
   }

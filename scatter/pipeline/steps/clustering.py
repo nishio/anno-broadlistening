@@ -43,6 +43,7 @@ def clustering(config):
     embeddings_array = np.asarray(embeddings_df["embedding"].values.tolist())
     clusters = config["clustering"]["clusters"]
 
+    # Always start with 100 clusters and merge down
     result = cluster_embeddings(
         docs=arguments_array,
         embeddings=embeddings_array,
@@ -50,9 +51,11 @@ def clustering(config):
             "arg-id": arguments_df["arg-id"].values,
             "comment-id": arguments_df["comment-id"].values,
         },
-        min_cluster_size=clusters,
-        n_topics=clusters,
+        min_cluster_size=8,  # Minimum cluster size
+        n_topics=clusters,  # Desired final cluster count
     )
+    
+    # Save all granularity levels to CSV
     result.to_csv(path, index=False)
 
 
@@ -75,10 +78,14 @@ def compute_cluster_distance(cluster1_docs, cluster2_docs):
     total_words = len(words1.union(words2))
     return 1.0 - (common_words / total_words if total_words > 0 else 0)
 
-def merge_adjacent_clusters(cluster_labels, adjacency, docs, n_clusters=8):
-    """Merge adjacent clusters based on their similarity until we reach the desired number of clusters."""
+def merge_adjacent_clusters(cluster_labels, adjacency, docs):
+    """Merge adjacent clusters based on their similarity, storing intermediate states.
+    Returns a dictionary mapping number of clusters to their corresponding labels."""
     current_labels = cluster_labels.copy()
     n_current_clusters = len(set(current_labels))
+    
+    # Store all granularity levels (8-100)
+    granularity_labels = {}
     
     # Create a mapping of cluster IDs to their documents
     cluster_docs = {}
@@ -87,8 +94,11 @@ def merge_adjacent_clusters(cluster_labels, adjacency, docs, n_clusters=8):
             cluster_docs[cluster_id] = []
         cluster_docs[cluster_id].append(docs[doc_idx])
     
-    # While we have more clusters than desired
-    while n_current_clusters > n_clusters:
+    # Store initial state (100 clusters)
+    granularity_labels[n_current_clusters] = current_labels.copy()
+    
+    # While we have more than 8 clusters
+    while n_current_clusters > 8:
         # Find the most similar adjacent clusters
         min_distance = float('inf')
         clusters_to_merge = None
@@ -115,7 +125,11 @@ def merge_adjacent_clusters(cluster_labels, adjacency, docs, n_clusters=8):
         current_labels[current_labels == c2] = c1
         n_current_clusters -= 1
         
-    return current_labels
+        # Store the current state if it's within our target range (8-100)
+        if 8 <= n_current_clusters <= 100:
+            granularity_labels[n_current_clusters] = current_labels.copy()
+    
+    return granularity_labels
 
 def cluster_embeddings(
     docs,
@@ -168,9 +182,10 @@ def cluster_embeddings(
     for simplex in vor.ridge_points:
         adjacency.add(tuple(sorted(simplex)))
     
-    # Merge clusters based on similarity until we reach the desired number
-    final_labels = merge_adjacent_clusters(cluster_labels, adjacency, docs, n_topics)
+    # Get all granularity levels from 100 down to 8
+    granularity_labels = merge_adjacent_clusters(cluster_labels, adjacency, docs)
 
+    # Create base result DataFrame
     result = topic_model.get_document_info(
         docs=docs,
         metadata={
@@ -182,6 +197,12 @@ def cluster_embeddings(
 
     result.columns = [c.lower() for c in result.columns]
     result = result[["arg-id", "x", "y", "probability"]]
-    result["cluster-id"] = final_labels
+    
+    # Add columns for each granularity level
+    for n_clusters, labels in granularity_labels.items():
+        result[f"cluster_level_{n_clusters}"] = labels
+    
+    # Set the requested number of clusters as the default cluster-id
+    result["cluster-id"] = granularity_labels.get(n_topics, granularity_labels[min(n_topics, max(granularity_labels.keys()))])
 
     return result
