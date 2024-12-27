@@ -79,6 +79,7 @@ def cluster_embeddings(
     UMAP = import_module("umap").UMAP
     CountVectorizer = import_module("sklearn.feature_extraction.text").CountVectorizer
     BERTopic = import_module("bertopic").BERTopic
+    Voronoi = import_module("scipy.spatial").Voronoi
 
     umap_model = UMAP(
         random_state=42,
@@ -107,6 +108,12 @@ def cluster_embeddings(
         n_init="auto"  # Use the new recommended default
     )
     cluster_labels = kmeans_model.fit_predict(umap_embeds)
+    
+    # Compute Voronoi diagram from cluster centers to find adjacent clusters
+    vor = Voronoi(kmeans_model.cluster_centers_)
+    adjacency = set()
+    for simplex in vor.ridge_points:
+        adjacency.add(tuple(sorted(simplex)))
 
     result = topic_model.get_document_info(
         docs=docs,
