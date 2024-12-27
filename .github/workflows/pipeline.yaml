@@ -1,0 +1,39 @@
+name: Run Pipeline on CSV changes
+
+on:
+  push:
+    paths:
+      - 'scatter/pipeline/inputs/*.csv'
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          cd scatter
+          pip install -r requirements.txt
+      
+      - name: Cache pipeline outputs
+        uses: actions/cache@v3
+        with:
+          path: scatter/pipeline/outputs
+          key: pipeline-outputs-${{ hashFiles('scatter/pipeline/inputs/*.csv') }}
+          restore-keys: |
+            pipeline-outputs-
+      
+      - name: Run pipeline
+        run: |
+          cd scatter/pipeline
+          python main.py configs/example-polis.json --skip-interaction
+        env:
+          PYTHONPATH: ${{ github.workspace }}/scatter/pipeline
