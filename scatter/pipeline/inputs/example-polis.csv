@@ -1,5 +1,5 @@
 timestamp,comment-id,author-id,agrees,disagrees,moderated,is-meta,is-seed,group-informed-consensus,comment-body
-1695309375466,321,210,3,1,1,false,false,0.25,"AI should be in line with democratic principles, but it is not a Western democracy. It should be in line with democracies around the world."
+1695309375466,321,210,3,1,1,false,false,0.25,"AI should be in line with democratic principles, but it is not a Western democracy. It should be in line with democracies around the world. "
 1695372499305,341,197,6,0,1,false,false,0.4375,"Public awareness, education, and participation around AI and the environment need to be improved."
 1695372492070,340,197,5,0,1,false,false,0.5333333333333333,"The benefits and risks of AI systems should be equitably distributed, not concentrated among a few groups."
 1695372485179,339,197,5,0,1,false,false,0.42857142857142855,AI should not automate or control critical environmental decisions without human oversight.
