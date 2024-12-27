@@ -39,121 +39,7 @@ type MapProps = Result & {
   propertyMap: PropertyMap
 }
 
-function DotCircles(
-  clusters: Cluster[],
-  expanded: boolean,
-  tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
-  onlyCluster: string | undefined,
-  voteFilter: any,
-  filterFn: (arg: Argument) => boolean
-) {
-
-  return clusters.map((cluster) =>
-    cluster.arguments.filter(voteFilter.filter).map((arg) => {
-      const {arg_id, x, y} = arg
-      const isCurrentTooltip = tooltip?.arg_id === arg_id
-
-      let dotClass = 'default'
-      if (expanded) {
-        if (!isCurrentTooltip) {
-          dotClass = 'obscure'
-        }
-      } else if (!filterFn(arg)) {
-        dotClass = 'obscure'
-      }
-
-      let calculatedRadius
-      if (expanded && isCurrentTooltip) {
-        calculatedRadius = 8
-      } else {
-        calculatedRadius = 4
-      }
-
-      return (
-        <circle
-          className={`pointer-events-none ${dotClass}`}
-          key={arg_id}
-          id={arg_id}
-          cx={zoom.zoomX(scaleX(x))}
-          cy={zoom.zoomY(scaleY(y))}
-          fill={color(cluster.cluster_id, onlyCluster)}
-          r={calculatedRadius}
-        />
-      )
-    })
-  )
-}
-
-function ClusterLabels(
-  clusters: Cluster[],
-  fullscreen: boolean,
-  expanded: boolean,
-  highlightText: string,
-  tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
-  t: any,
-  onlyCluster: string | undefined,
-  showLabels: boolean,
-  showRatio: boolean,
-  totalArgs: number,
-) {
-  if (!fullscreen || !showLabels || zoom.dragging) {
-    return null
-  }
-
-  return (
-    <div>
-      {clusters.map((cluster) => {
-        const isHighlightMode = highlightText !== ''
-
-        let calculatedOpacity
-        const DEFAULT_OPACITY = 0.85
-        const LIGHT_OPACITY = 0.3
-        const HIDDEN = 0
-
-        if (isHighlightMode) {
-          calculatedOpacity = LIGHT_OPACITY
-          // nishio: ハイライトモードではラベルが濃いと点が見づらいため、透明度を下げる
-          // 将来的にはハイライトされた点を含むクラスタのみラベルを表示するように変更するといいかも
-        } else if (expanded) {
-          calculatedOpacity = LIGHT_OPACITY
-        } else if (tooltip?.cluster_id === cluster.cluster_id) {
-          // tooltipが表示されているクラスタのラベルは非表示
-          // tooltipが表示されているときは、その点がどのクラスタか表示されているため
-          calculatedOpacity = HIDDEN
-        } else {
-          calculatedOpacity = DEFAULT_OPACITY
-        }
-
-        return (
-          <div
-            className={'absolute opacity-90 bg-white p-2 max-w-lg rounded-lg pointer-events-none select-none transition-opacity duration-300 font-bold text-md'}
-            key={cluster.cluster_id}
-            style={{
-              transform: 'translate(-50%, -50%)',
-              left: zoom.zoomX(scaleX(mean(cluster.arguments.map(({x}) => x)))),
-              top: zoom.zoomY(scaleY(mean(cluster.arguments.map(({y}) => y)))),
-              color: color(cluster.cluster_id, onlyCluster),
-              opacity: calculatedOpacity,
-            }}
-          >
-            {t(cluster.cluster)}
-            {showRatio && (
-              <span>({Math.round((100 * cluster.arguments.length) / totalArgs)}%)</span>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+import ClusterDetails from './ClusterDetails'
 
 function DesktopMap(props: MapProps) {
   const {
@@ -508,19 +394,25 @@ function DesktopMap(props: MapProps) {
               },
             })}
           >
-            {/* DOT CIRCLES */}
-            {DotCircles(
-              clusters,
-              expanded,
-              tooltip,
-              zoom,
-              scaleX,
-              scaleY,
-              color,
-              onlyCluster,
-              voteFilter,
-              filterFn
-            )}
+            {/* CLUSTER DETAILS */}
+            <ClusterDetails
+              clusters={clusters}
+              fullScreen={fullScreen}
+              expanded={expanded}
+              tooltip={tooltip}
+              zoom={zoom}
+              scaleX={scaleX}
+              scaleY={scaleY}
+              color={color}
+              onlyCluster={onlyCluster}
+              voteFilter={voteFilter}
+              filterFn={filterFn}
+              showLabels={showLabels}
+              showRatio={showRatio}
+              t={translator.t}
+              highlightText={highlightText}
+              totalArgs={totalArgs}
+            />
             {/* お気に入りの表示 */}
             {showFavorites && (
               favorites.map((fav) => (
@@ -534,23 +426,6 @@ function DesktopMap(props: MapProps) {
               ))
             )}
           </svg>
-          {/* CLUSTER LABELS */}
-          {ClusterLabels(
-            clusters,
-            fullScreen,
-            expanded,
-            highlightText,
-            tooltip,
-            zoom,
-            scaleX,
-            scaleY,
-            color,
-            t,
-            onlyCluster,
-            showLabels,
-            showRatio,
-            totalArgs
-          )}
 
           {/* TOOLTIP */}
           {tooltip && (
