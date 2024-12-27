@@ -96,6 +96,8 @@ function MobileMap(props: MapProps) {
         <svg
           width={width!}
           height={height!}
+          role="img"
+          aria-label={t('Interactive scatter plot of arguments')}
           {...bind()}
           {...zoom.events({
             onClick: (e: any) => {
@@ -148,6 +150,8 @@ function MobileMap(props: MapProps) {
               <div
                 className={`absolute opacity-90 bg-white p-2 max-w-lg rounded-lg pointer-events-none select-none transition-opacity duration-300 font-bold ${isTouch ? 'text-base' : 'text-2xl'}`}
                 key={cluster.cluster_id}
+                role="text"
+                aria-label={t(`Cluster: ${cluster.cluster}`)}
                 style={{
                   transform: 'translate(-50%, -50%)',
                   left: zoom.zoomX(
@@ -175,6 +179,9 @@ function MobileMap(props: MapProps) {
           </div>
         )}
         {/* TOOLTIP */}
+        <div aria-live="polite" className="sr-only">
+          {tooltip ? t(`Selected point from cluster: ${tooltip.cluster}`) : t('No point selected')}
+        </div>
         {tooltip && (
           <Tooltip
             point={tooltip}
@@ -188,18 +195,25 @@ function MobileMap(props: MapProps) {
         {/* BACK BUTTON */}
         {fullScreen && (
           <div className="absolute top-0 left-0">
-            <button className="m-2 underline" onClick={back}>
+            <button 
+              className="m-2 underline" 
+              onClick={back}
+              aria-label={t('Back to report')}
+            >
               {t('Back to report')}
             </button>
             <button
               className="m-2 underline"
-              onClick={() => setShowLabels(prev => !prev)}>
+              onClick={() => setShowLabels(prev => !prev)}
+              aria-label={showLabels ? t('Hide labels') : t('Show labels')}
+            >
               {showLabels ? t('Hide labels') : t('Show labels')}
             </button>
             {zoom.reset && (
               <button
                 className="m-2 underline"
                 onClick={zoom.reset as any}
+                aria-label={t('Reset zoom')}
               >
                 {t('Reset zoom')}
               </button>
@@ -210,13 +224,18 @@ function MobileMap(props: MapProps) {
                 onClick={() => {
                   setShowFilters((x) => !x)
                 }}
+                aria-label={showFilters ? t('Hide filters') : t('Show filters')}
               >
                 {showFilters ? t('Hide filters') : t('Show filters')}
               </button>
             )}
             {/* FILTERS */}
             {showFilters && (
-              <div className="absolute w-[400px] top-12 left-2 p-2 border bg-white rounded leading-4">
+              <div 
+                className="absolute w-[400px] top-12 left-2 p-2 border bg-white rounded leading-4"
+                role="region"
+                aria-label={t('Filter controls')}
+                aria-expanded={showFilters}>
                 <div className="flex justify-between">
                   <button className="inline-block m-2 text-left">
                     {t('Votes')} {'>'}{' '}
@@ -231,6 +250,10 @@ function MobileMap(props: MapProps) {
                     min="0"
                     max="50"
                     value={minVotes}
+                    aria-label={t('Minimum votes')}
+                    aria-valuemin="0"
+                    aria-valuemax="50"
+                    aria-valuenow={minVotes}
                     onInput={(e) => {
                       setMinVotes(
                         parseInt((e.target as HTMLInputElement).value)
@@ -252,6 +275,10 @@ function MobileMap(props: MapProps) {
                     min="50"
                     max="100"
                     value={minConsensus}
+                    aria-label={t('Minimum consensus percentage')}
+                    aria-valuemin="50"
+                    aria-valuemax="100"
+                    aria-valuenow={minConsensus}
                     onInput={(e) => {
                       setMinConsensus(
                         parseInt((e.target as HTMLInputElement).value)
