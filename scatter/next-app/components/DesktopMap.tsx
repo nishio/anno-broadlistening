@@ -108,6 +108,8 @@ function DesktopMap(props: MapProps) {
   const [showFavorites, setShowFavorites] = useState(false)
   const [showTitle, setShowTitle] = useState(false)
   const [showFilterSettings, setShowFilterSettings] = useState(false)
+  const [enableLazyLoading, setEnableLazyLoading] = useState(false)
+  const [enableMetrics, setEnableMetrics] = useState(false)
 
   const totalArgs = clusters
     .map((c) => c.arguments.length)
@@ -402,6 +404,8 @@ function DesktopMap(props: MapProps) {
               t={translator.t}
               highlightText={highlightText}
               totalArgs={totalArgs}
+              enableLazyLoading={enableLazyLoading}
+              enableMetrics={enableMetrics}
             />
             {/* お気に入りの表示 */}
             {showFavorites && (
@@ -466,6 +470,10 @@ function DesktopMap(props: MapProps) {
             setShowRatio={setShowRatio}
             showFavorites={showFavorites}
             setShowFavorites={setShowFavorites}
+            enableLazyLoading={enableLazyLoading}
+            setEnableLazyLoading={setEnableLazyLoading}
+            enableMetrics={enableMetrics}
+            setEnableMetrics={setEnableMetrics}
           />
         )}
         {/* フィルター一覧 */}

@@ -1,9 +1,13 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { ColorFunc } from '../hooks/useClusterColor'
+import { usePerformanceMetrics } from '../hooks/usePerformanceMetrics'
 import { Argument, Cluster, Point } from '../types'
 import { mean } from '../utils'
 
 interface Props {
+  enableLazyLoading?: boolean
+  lazyLoadDelay?: number
+  enableMetrics?: boolean
   clusters: Cluster[]
   fullScreen?: boolean
   expanded: boolean
@@ -137,7 +141,38 @@ const ClusterLabels: React.FC<Props> = ({
   )
 }
 
-const ClusterDetails: React.FC<Props> = (props) => {
+const ClusterDetails: React.FC<Props> = ({
+  enableLazyLoading = false,
+  lazyLoadDelay = 500,
+  enableMetrics = false,
+  ...props
+}) => {
+  const [showDetails, setShowDetails] = useState(!enableLazyLoading)
+  const metrics = usePerformanceMetrics(enableMetrics)
+
+  useEffect(() => {
+    if (enableMetrics && metrics.initialLoadTime) {
+      console.debug('Performance Metrics:', metrics)
+    }
+  }, [enableMetrics, metrics])
+
+  useEffect(() => {
+    if (!enableLazyLoading) {
+      setShowDetails(true)
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setShowDetails(true)
+    }, lazyLoadDelay)
+
+    return () => clearTimeout(timer)
+  }, [enableLazyLoading, lazyLoadDelay])
+
+  if (!showDetails) {
+    return null
+  }
+
   return (
     <>
       <DotCircles {...props} />

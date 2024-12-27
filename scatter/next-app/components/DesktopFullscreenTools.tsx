@@ -5,7 +5,8 @@ import {
   Minimize2Icon,
   ScanSearchIcon,
   SlidersHorizontalIcon,
-  TagIcon
+  TagIcon,
+  ZapIcon
 } from 'lucide-react'
 import React from 'react'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
@@ -25,6 +26,10 @@ type Props = {
   setShowRatio: React.Dispatch<React.SetStateAction<boolean>>
   showFavorites: boolean
   setShowFavorites: React.Dispatch<React.SetStateAction<boolean>>
+  enableLazyLoading: boolean
+  setEnableLazyLoading: React.Dispatch<React.SetStateAction<boolean>>
+  enableMetrics: boolean
+  setEnableMetrics: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export function DesktopFullscreenTools(props: Props) {
@@ -55,6 +60,14 @@ export function DesktopFullscreenTools(props: Props) {
             onClick={() => typeof props.zoomReset === 'function' && props.zoomReset()}>
             <ScanSearchIcon className={props.zoomReset ? 'text-blue-500' : 'text-gray-500'}/>
             <p className={'text-xs text-gray-700'}>{t('toolsResetPosition')}</p>
+          </button>
+          <button className="w-[80px] m-1 flex flex-col items-center" onClick={() => props.setEnableLazyLoading(x => !x)}>
+            <ZapIcon className={props.enableLazyLoading ? 'text-blue-500' : 'text-gray-500'}/>
+            <p className={'text-xs text-gray-700'}>{t('toolsLazyLoading') || 'Lazy Loading'}</p>
+          </button>
+          <button className="w-[80px] m-1 flex flex-col items-center" onClick={() => props.setEnableMetrics(x => !x)}>
+            <ChartPieIcon className={props.enableMetrics ? 'text-blue-500' : 'text-gray-500'}/>
+            <p className={'text-xs text-gray-700'}>{t('toolsMetrics') || 'Show Metrics'}</p>
           </button>
         </div>
         <div className={'flex justify-between items-center'}>
