@@ -6,6 +6,14 @@ Talk to the City（[TTTC](https://github.com/AIObjectives/talk-to-the-city-repor
 
 ### Python環境のセットアップ
 
+本プロジェクトはPython 3.10での動作を推奨しています。Python 3.12を使用すると、以下のようなエラーが発生する場合があります：
+
+```
+ModuleNotFoundError: No module named 'distutils'
+```
+
+このエラーを回避し、安定した環境でプロジェクトを実行するために、pyenvを使用してPython 3.10をインストールすることを推奨します。以下の手順で環境をセットアップしてください：
+
 1. pyenvのインストール（まだインストールしていない場合）:
 ```bash
 curl https://pyenv.run | bash
