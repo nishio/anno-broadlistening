@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type {Argument, Cluster, Point} from '@/types'
-import type {VoteFilter} from '@/src/types/VoteFilter'
+import type {VoteFilter} from '@/types/VoteFilter'
 import {mean} from '@/utils'
 
 export interface Props {
@@ -176,8 +176,8 @@ const ClusterLabels: React.FC<ClusterLabelsProps> = ({
   )
 }
 
-export const DotCirclesComponent = React.memo(DotCircles);
-export const ClusterLabelsComponent = React.memo(ClusterLabels);
+export const DotCirclesComponent = React.memo(DotCircles)
+export const ClusterLabelsComponent = React.memo(ClusterLabels)
 
 const ClusterDetails: React.FC<Props> = ({
   clusters,
@@ -199,22 +199,22 @@ const ClusterDetails: React.FC<Props> = ({
   enableLazyLoading = false,
   lazyLoadDelay = 500,
 }: Props) => {
-  const [showDetails, setShowDetails] = useState(!enableLazyLoading);
+  const [showDetails, setShowDetails] = useState(!enableLazyLoading)
 
   useEffect(() => {
     if (!enableLazyLoading) {
-      return;
+      return
     }
 
     const timer = setTimeout(() => {
-      setShowDetails(true);
-    }, lazyLoadDelay);
+      setShowDetails(true)
+    }, lazyLoadDelay)
     
-    return () => clearTimeout(timer);
-  }, [enableLazyLoading, lazyLoadDelay]);
+    return () => clearTimeout(timer)
+  }, [enableLazyLoading, lazyLoadDelay])
 
   if (!showDetails) {
-    return null;
+    return null
   }
 
   return (
@@ -248,7 +248,7 @@ const ClusterDetails: React.FC<Props> = ({
         totalArgs={totalArgs}
       />
     </>
-  );
-};
+  )
+}
 
-export default ClusterDetails;
+export default ClusterDetails

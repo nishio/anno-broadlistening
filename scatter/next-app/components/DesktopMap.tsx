@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react'
 import {useGesture} from '@use-gesture/react'
+import React, {useEffect, useRef, useState} from 'react'
 
 // Components
 import ClusterDetails from '@/components/ClusterDetails'
@@ -20,7 +20,7 @@ import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
 
 // Types
-import {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
+import {Argument, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 
 type TooltipPosition = {
   x: number
@@ -183,53 +183,53 @@ function DesktopMap(props: MapProps) {
   // Performance measurement setup
   useEffect(() => {
     // Clear existing performance marks and measures
-    performance.clearMarks();
-    performance.clearMeasures();
+    performance.clearMarks()
+    performance.clearMeasures()
 
     // Mark the start of scatter plot rendering
-    performance.mark('scatter-plot-start');
-    console.log('%cScatter plot rendering started', 'color: #2196F3; font-weight: bold');
+    performance.mark('scatter-plot-start')
+    console.log('%cScatter plot rendering started', 'color: #2196F3; font-weight: bold')
     
     // Create performance observer for paint metrics
     const paintObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
+      const entries = list.getEntries()
       entries.forEach(entry => {
         if (entry.name === 'first-paint') {
           console.log('%cFirst Paint:', 'color: #4CAF50; font-weight: bold', 
-            Math.round(entry.startTime), 'ms');
+            Math.round(entry.startTime), 'ms')
         }
         if (entry.name === 'first-contentful-paint') {
           console.log('%cFirst Contentful Paint:', 'color: #4CAF50; font-weight: bold', 
-            Math.round(entry.startTime), 'ms');
+            Math.round(entry.startTime), 'ms')
         }
-      });
-    });
+      })
+    })
 
     // Create observer for Largest Contentful Paint
     const lcpObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1];
+      const entries = list.getEntries()
+      const lastEntry = entries[entries.length - 1]
       console.log('%cLargest Contentful Paint:', 'color: #4CAF50; font-weight: bold', 
-        Math.round(lastEntry.startTime), 'ms');
+        Math.round(lastEntry.startTime), 'ms')
       
       // Mark the end of scatter plot rendering
-      performance.mark('scatter-plot-end');
-      performance.measure('scatter-plot-render-time', 'scatter-plot-start', 'scatter-plot-end');
-      const measures = performance.getEntriesByName('scatter-plot-render-time');
+      performance.mark('scatter-plot-end')
+      performance.measure('scatter-plot-render-time', 'scatter-plot-start', 'scatter-plot-end')
+      const measures = performance.getEntriesByName('scatter-plot-render-time')
       console.log('%cScatter plot render time:', 'color: #2196F3; font-weight: bold', 
-        Math.round(measures[0].duration), 'ms');
-    });
+        Math.round(measures[0].duration), 'ms')
+    })
 
     // Observe paint and LCP metrics
-    paintObserver.observe({ entryTypes: ['paint'] });
-    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+    paintObserver.observe({ entryTypes: ['paint'] })
+    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
 
     // Cleanup
     return () => {
-      paintObserver.disconnect();
-      lcpObserver.disconnect();
-    };
-  }, []); // Run once on mount
+      paintObserver.disconnect()
+      lcpObserver.disconnect()
+    }
+  }, []) // Run once on mount
 
   useEffect(() => {
     if (clusters.length === 0) return
