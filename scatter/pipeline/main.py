@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -15,8 +16,45 @@ from steps.visualization import visualization
 from utils import initialization, run_step, termination
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description="Run the annotation pipeline with optional flags."
+    )
+    parser.add_argument(
+        "config",
+        help="Path to config JSON file that defines the pipeline execution."
+    )
+    parser.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Force re-run all steps regardless of previous execution."
+    )
+    parser.add_argument(
+        "-o", "--only",
+        type=str,
+        help="Run only the specified step (e.g., extraction, embedding, clustering, etc.)."
+    )
+    parser.add_argument(
+        "--skip-interaction",
+        action="store_true",
+        help="Skip the interactive confirmation prompt and run pipeline immediately."
+    )
+    return parser.parse_args()
+
+
 def main():
-    config = initialization(sys.argv)
+    args = parse_arguments()
+    
+    # Convert argparse namespace to sys.argv format for compatibility
+    new_argv = [sys.argv[0], args.config]
+    if args.force:
+        new_argv.append("-f")
+    if args.only:
+        new_argv.extend(["-o", args.only])
+    if args.skip_interaction:
+        new_argv.append("-skip-interaction")
+    
+    config = initialization(new_argv)
 
     try:
         run_step("extraction", extraction, config)
