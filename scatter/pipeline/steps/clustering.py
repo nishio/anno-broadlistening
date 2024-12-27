@@ -67,16 +67,68 @@ def tokenize_japanese(text):
     ]
 
 
+def parse_similarity_score(llm_response: str) -> float:
+    """Parse the similarity score from LLM JSON response."""
+    import json
+    try:
+        response_data = json.loads(llm_response)
+        return float(response_data.get("similarity", 0.0))
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return 0.0
+
 def compute_cluster_distance(cluster1_docs, cluster2_docs):
-    """Compute a preliminary distance score between two clusters.
-    This is a placeholder implementation that can be enhanced with LLM-based scoring later.
+    """Compute semantic similarity between two clusters using LLM.
+    Returns a distance score (1 - similarity) between 0 and 1.
     """
-    # For now, use a simple heuristic based on the number of common words
-    words1 = set(" ".join(cluster1_docs).split())
-    words2 = set(" ".join(cluster2_docs).split())
-    common_words = len(words1.intersection(words2))
-    total_words = len(words1.union(words2))
-    return 1.0 - (common_words / total_words if total_words > 0 else 0)
+    from services.llm import request_to_chat_openai
+    
+    # Prepare cluster summaries (join with newlines for readability)
+    cluster1_text = "\n".join(cluster1_docs)
+    cluster2_text = "\n".join(cluster2_docs)
+    
+    # Create prompt for similarity calculation
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a semantic similarity analyzer. Given two sets of text, analyze their semantic similarity and return a JSON response with a single 'similarity' field containing a float between 0.0 (completely different) and 1.0 (identical or extremely similar).
+
+Example response format:
+{"similarity": 0.85}
+
+Consider:
+- Semantic meaning over word overlap
+- Topic similarity
+- Context and implications
+- Overall message intent"""
+        },
+        {
+            "role": "user",
+            "content": f"""Compare the semantic similarity of these two text clusters:
+
+Cluster 1:
+{cluster1_text}
+
+Cluster 2:
+{cluster2_text}
+
+Return only a JSON object with the similarity score."""
+        }
+    ]
+    
+    try:
+        # Request similarity score from LLM
+        llm_response = request_to_chat_openai(messages, model="gpt-4", is_json=True)
+        similarity = parse_similarity_score(llm_response)
+        # Convert similarity to distance (1 - similarity)
+        return 1.0 - similarity
+    except Exception as e:
+        print(f"Error in LLM similarity calculation: {e}")
+        # Fallback to basic word overlap method if LLM fails
+        words1 = set(" ".join(cluster1_docs).split())
+        words2 = set(" ".join(cluster2_docs).split())
+        common_words = len(words1.intersection(words2))
+        total_words = len(words1.union(words2))
+        return 1.0 - (common_words / total_words if total_words > 0 else 0)
 
 def merge_adjacent_clusters(cluster_labels, adjacency, docs):
     """Merge adjacent clusters based on their similarity, storing intermediate states.
