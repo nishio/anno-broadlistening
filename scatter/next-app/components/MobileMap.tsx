@@ -1,16 +1,21 @@
-import React, {useEffect, useState} from 'react'
+// Third-party imports
 import {useGesture} from '@use-gesture/react'
+
+// React imports
+import React, {useEffect, useState} from 'react'
+
+// Local imports
 import CustomTitle from '@/components/CustomTitle'
 import Tooltip from '@/components/MobileTooltip'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useFilter from '@/hooks/useFilter'
 import useInferredFeatures from '@/hooks/useInferredFeatures'
+import {useScatterMap, GestureEvent} from '@/hooks/useScatterMap'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
-import {useScatterMap, GestureEvent, ZoomEvents} from '@/hooks/useScatterMap'
-import {Point, Result} from '@/types'
+import type {Result} from '@/types'
 import {isTouchDevice, mean} from '@/utils'
 
-type ZoomState = {
+type _ZoomState = {
   scale: number
   x: number
   y: number
@@ -43,29 +48,25 @@ function MobileMap(props: MapProps) {
   const {dataHasVotes} = useInferredFeatures(props)
   const voteFilter = useFilter(clusters, comments, minVotes, minConsensus, dataHasVotes)
 
-  const {scaleX, scaleY, width, height} = dimensions || {}
-  if (!scaleX || !scaleY || !zoom) return null
   const {t} = translator
-
   const [isTouch, setIsTouch] = useState(false)
+  const [_zoomState, setZoomState] = useState({scale: 1, x: 0, y: 0})
 
   useEffect(() => {
     setIsTouch(isTouchDevice())
   }, [])
 
-  // TODO _zoomState は参照されていないので setZoomState が不要な可能性がある
-  const [_zoomState, setZoomState] = useState({scale: 1, x: 0, y: 0})
-
   const bind = useGesture({
-    onDrag: ({offset: [x, y], memo}) => {
+    onDrag: ({offset: [x, y]}) => {
       setZoomState((prev) => ({...prev, x, y}))
-      return memo
     },
-    onPinch: ({offset: [d], memo}) => {
+    onPinch: ({offset: [d]}) => {
       setZoomState((prev) => ({...prev, scale: d}))
-      return memo
     },
   })
+
+  const {scaleX, scaleY, width, height} = dimensions || {}
+  if (!scaleX || !scaleY || !zoom) return null
 
   if (!dimensions) {
     console.log('NO DIMENSIONS???')
@@ -100,7 +101,7 @@ function MobileMap(props: MapProps) {
           aria-label={t('Interactive scatter plot of arguments')}
           {...bind()}
           {...zoom.events({
-            onClick: (e: any) => {
+            onClick: (e: GestureEvent) => {
               if (tooltip && !expanded) {
                 setExpanded(true)
                 zoom.disable()
@@ -110,7 +111,7 @@ function MobileMap(props: MapProps) {
                 zoom.enable()
               }
             },
-            onMove: (e: any) => {
+            onMove: (e: GestureEvent) => {
               if (!expanded) {
                 setTooltip(findPoint(e)?.data || null)
               }
@@ -212,7 +213,7 @@ function MobileMap(props: MapProps) {
             {zoom.reset && (
               <button
                 className="m-2 underline"
-                onClick={zoom.reset as any}
+                onClick={zoom.reset as () => void}
                 aria-label={t('Reset zoom')}
               >
                 {t('Reset zoom')}
@@ -234,8 +235,7 @@ function MobileMap(props: MapProps) {
               <div 
                 className="absolute w-[400px] top-12 left-2 p-2 border bg-white rounded leading-4"
                 role="region"
-                aria-label={t('Filter controls')}
-                aria-expanded={showFilters}>
+                aria-label={t('Filter controls')}>
                 <div className="flex justify-between">
                   <button className="inline-block m-2 text-left">
                     {t('Votes')} {'>'}{' '}
@@ -247,16 +247,16 @@ function MobileMap(props: MapProps) {
                     className="inline-block w-[200px] mr-2"
                     id="min-votes-slider"
                     type="range"
-                    min="0"
-                    max="50"
+                    min={0}
+                    max={50}
                     value={minVotes}
                     aria-label={t('Minimum votes')}
-                    aria-valuemin="0"
-                    aria-valuemax="50"
+                    aria-valuemin={0}
+                    aria-valuemax={50}
                     aria-valuenow={minVotes}
-                    onInput={(e) => {
+                    onChange={(e) => {
                       setMinVotes(
-                        parseInt((e.target as HTMLInputElement).value)
+                        parseInt(e.target.value)
                       )
                     }}
                   />
@@ -272,16 +272,16 @@ function MobileMap(props: MapProps) {
                     className="inline-block w-[200px] mr-2"
                     id="min-consensus-slider"
                     type="range"
-                    min="50"
-                    max="100"
+                    min={50}
+                    max={100}
                     value={minConsensus}
                     aria-label={t('Minimum consensus percentage')}
-                    aria-valuemin="50"
-                    aria-valuemax="100"
+                    aria-valuemin={50}
+                    aria-valuemax={100}
                     aria-valuenow={minConsensus}
-                    onInput={(e) => {
+                    onChange={(e) => {
                       setMinConsensus(
-                        parseInt((e.target as HTMLInputElement).value)
+                        parseInt(e.target.value)
                       )
                     }}
                   />
