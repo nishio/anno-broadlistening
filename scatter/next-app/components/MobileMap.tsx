@@ -1,6 +1,6 @@
-import React, {useEffect, useState, SVGProps} from 'react'
-import {useGesture} from '@use-gesture/react'
 import type {UserGestureConfig} from '@use-gesture/react'
+import {useGesture} from '@use-gesture/react'
+import React, {useEffect, useState} from 'react'
 
 type ZoomType = {
   zoomX: (x: number) => number;
@@ -107,9 +107,9 @@ function MobileMap(props: MapProps) {
         <svg
           width={width!}
           height={height!}
-          {...(bind() as any)}
+          {...bind()}
           {...zoom.events({
-            onClick: (e: any) => {
+            onClick: (e: MouseEvent) => {
               if (tooltip && !expanded) {
                 setExpanded(true)
                 zoom.disable()

@@ -1,14 +1,6 @@
-import {useGesture} from '@use-gesture/react'
-import React, {useEffect, useRef, useState, SVGProps, MouseEvent} from 'react'
 import type {UserGestureConfig} from '@use-gesture/react'
-
-type GestureEvent = {
-  event: MouseEvent;
-  xy: number[];
-  initial: number[];
-  delta: number[];
-  offset: number[];
-};
+import {useGesture} from '@use-gesture/react'
+import React, {useEffect, useRef, useState, MouseEvent} from 'react'
 
 type ZoomType = {
   zoomX: (x: number) => number;
@@ -515,10 +507,10 @@ function DesktopMap(props: MapProps) {
           <svg
             width={width!}
             height={height!}
-            {...(bind() as any)}
+            {...bind()}
             {...zoom.events({
-              onClick: handleClick,
-              onMove: handleMove,
+              onClick: (e: MouseEvent) => handleClick(e),
+              onMove: (e: MouseEvent) => handleMove(e),
               onDrag: () => {
                 setTooltip(null)
               },
