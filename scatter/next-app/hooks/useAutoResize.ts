@@ -2,7 +2,6 @@ import {useEffect, useState} from 'react'
 import {Dimensions} from '@/types'
 
 const getDimensions = (width?: number, height?: number, padding?: number) => {
-  console.log('getDimensions', window.innerWidth)
   const dims =
     window.innerWidth < 500
       ? {
@@ -15,7 +14,6 @@ const getDimensions = (width?: number, height?: number, padding?: number) => {
         height: height || window.innerHeight!,
         padding: padding || 30,
       }
-  console.log(dims)
   return {
     ...dims,
     scaleX: (x: number) => dims.padding + x * (dims.width! - 2 * dims.padding),

@@ -69,7 +69,6 @@ function MobileMap(props: MapProps) {
   })
 
   if (!dimensions) {
-    console.log('NO DIMENSIONS???')
     return (
       <div
         className="m-auto bg-blue-50"

@@ -1,8 +1,7 @@
 import React from 'react'
+import { ColorFunc } from '../hooks/useClusterColor'
 import { Argument, Cluster, Point } from '../types'
 import { mean } from '../utils'
-import { ColorFunc } from '../hooks/useClusterColor'
-import { Translator } from '../hooks/useTranslatorAndReplacements'
 
 interface Props {
   clusters: Cluster[]

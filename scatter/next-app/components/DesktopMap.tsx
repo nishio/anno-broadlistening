@@ -1,5 +1,6 @@
 import {useGesture} from '@use-gesture/react'
 import React, {useEffect, useRef, useState} from 'react'
+import ClusterDetails from './ClusterDetails'
 import CustomTitle from '@/components/CustomTitle'
 import {DesktopFullscreenFavorites} from '@/components/DesktopFullscreenFavorites'
 import {DesktopFullscreenFilter} from '@/components/DesktopFullscreenFilter'
@@ -13,8 +14,7 @@ import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
-import {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
-import {mean} from '@/utils'
+import {Argument, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 
 type TooltipPosition = {
   x: number
@@ -38,8 +38,6 @@ type MapProps = Result & {
   }
   propertyMap: PropertyMap
 }
-
-import ClusterDetails from './ClusterDetails'
 
 function DesktopMap(props: MapProps) {
   const {
@@ -116,14 +114,12 @@ function DesktopMap(props: MapProps) {
     .reduce((a, b) => a + b, 0)
 
   const {scaleX, scaleY, width, height} = dimensions || {}
-  const {t} = translator
 
   const favoritesKey = `favorites_${window.location.href}`
 
   const [favorites, setFavorites] = useState<FavoritePoint[]>(() => {
     try {
       const storedFavorites = localStorage.getItem(favoritesKey)
-      console.log('読み込んだお気に入り:', storedFavorites)
       return storedFavorites ? JSON.parse(storedFavorites) : []
     } catch (error) {
       console.error('お気に入りの読み込みに失敗しました:', error)
@@ -136,11 +132,10 @@ function DesktopMap(props: MapProps) {
   useEffect(() => {
     try {
       localStorage.setItem(favoritesKey, JSON.stringify(favorites))
-      console.log('保存したお気に入り:', favorites)
     } catch (error) {
       console.error('お気に入りの保存に失敗しました:', error)
     }
-  }, [favorites])
+  }, [favorites, favoritesKey])
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -212,7 +207,7 @@ function DesktopMap(props: MapProps) {
       setZoomState({scale, x, y})
     }
 
-  }, [clusters, dimensions, fullScreen])
+  }, [clusters, dimensions, fullScreen, zoomState.scale, zoomState.x, zoomState.y])
 
   const TOOLTIP_WIDTH = 300
   const TOOLTIP_HEIGHT = 100
@@ -248,7 +243,6 @@ function DesktopMap(props: MapProps) {
   }
 
   if (!dimensions) {
-    console.log('NO DIMENSIONS???')
     return (
       <div
         className="m-auto bg-blue-50"
@@ -311,23 +305,19 @@ function DesktopMap(props: MapProps) {
   }
 
   const handleTap = (event: any) => {
-    console.log('handleTap called')
     const clientX = event.clientX
     const clientY = event.clientY
-
-    console.log(`Tap event at (${clientX}, ${clientY})`)
 
     const clickedPoint = findPoint({clientX, clientY})
     if (clickedPoint) {
       const newPosition = calculateTooltipPosition(clientX, clientY)
-      console.log('Tapped point found:', clickedPoint.data)
       setTooltip(clickedPoint.data)
       setTooltipPosition(newPosition)
     } else {
       // ツールチップが開いている場合は閉じる
       if (tooltip) {
         setTooltip(null)
-        console.log('Tooltip closed due to tap with no point')
+
       }
     }
   }
