@@ -3,7 +3,6 @@ import {useGesture} from '@use-gesture/react'
 
 // React imports
 import React, {useEffect, useState} from 'react'
-
 // Local imports
 import CustomTitle from '@/components/CustomTitle'
 import Tooltip from '@/components/MobileTooltip'
@@ -12,15 +11,10 @@ import useFilter from '@/hooks/useFilter'
 import useInferredFeatures from '@/hooks/useInferredFeatures'
 import {useScatterMap, GestureEvent} from '@/hooks/useScatterMap'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
-import type {Result} from '@/types'
+import type {Point, Result} from '@/types'
 import {isTouchDevice, mean} from '@/utils'
 
-type _ZoomState = {
-  scale: number
-  x: number
-  y: number
-}
-
+// ZoomState type moved to useScatterMap
 type MapProps = Result & {
   width?: number,
   height?: number,
@@ -48,6 +42,8 @@ function MobileMap(props: MapProps) {
   const {dataHasVotes} = useInferredFeatures(props)
   const voteFilter = useFilter(clusters, comments, minVotes, minConsensus, dataHasVotes)
 
+  const {scaleX, scaleY, width, height} = dimensions || {}
+  if (!scaleX || !scaleY || !zoom) return null
   const {t} = translator
   const [isTouch, setIsTouch] = useState(false)
   const [_zoomState, setZoomState] = useState({scale: 1, x: 0, y: 0})
@@ -65,10 +61,7 @@ function MobileMap(props: MapProps) {
     },
   })
 
-  const {scaleX, scaleY, width, height} = dimensions || {}
-  if (!scaleX || !scaleY || !zoom) return null
-
-  if (!dimensions) {
+  if (!dimensions || !scaleX || !scaleY || !zoom) {
     console.log('NO DIMENSIONS???')
     return (
       <div

@@ -1,4 +1,21 @@
 import {MouseEvent, TouchEvent, useState} from 'react'
+
+// Helper function to safely get coordinates from different event types
+export const getEventCoordinates = (event: GestureEvent): { clientX: number; clientY: number } => {
+  if ('touches' in event) {
+    // Touch event
+    const touch = event.touches[0] || event.changedTouches[0]
+    return {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    }
+  }
+  // Mouse event
+  return {
+    clientX: event.clientX,
+    clientY: event.clientY
+  }
+}
 import {Argument, Cluster, Dimensions, Point, Result} from '@/types'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useAutoResize from '@/hooks/useAutoResize'
@@ -7,12 +24,6 @@ import useInferredFeatures from '@/hooks/useInferredFeatures'
 import useRelativePositions from '@/hooks/useRelativePositions'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
-
-type ZoomState = {
-  scale: number
-  panx: number
-  pany: number
-}
 import {mean} from '@/utils'
 
 export type GestureEvent = MouseEvent<SVGSVGElement> | TouchEvent<SVGSVGElement>

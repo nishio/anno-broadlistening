@@ -18,29 +18,7 @@ import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import type {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 import {mean} from '@/utils'
 
-// Helper function to safely get coordinates from different event types
-const getEventCoordinates = (event: GestureEvent): { clientX: number; clientY: number } => {
-  if ('touches' in event) {
-    // Touch event
-    const touch = event.touches[0] || event.changedTouches[0]
-    return {
-      clientX: touch.clientX,
-      clientY: touch.clientY
-    }
-  }
-  // Mouse event
-  return {
-    clientX: event.clientX,
-    clientY: event.clientY
-  }
-}
-
-type _ZoomState = {
-  scale: number
-  x: number
-  y: number
-}
-
+// Helper function moved to useScatterMap hook
 type TooltipPosition = {
   x: number
   y: number
@@ -236,6 +214,13 @@ function DesktopMap(props: MapProps) {
   const [showFavorites, setShowFavorites] = useState(false)
   const [showTitle, setShowTitle] = useState(false)
   const [showFilterSettings, setShowFilterSettings] = useState(false)
+  const totalArgs = clusters
+    .map((c) => c.arguments.length)
+    .reduce((a, b) => a + b, 0)
+
+  const {scaleX, scaleY, width, height} = dimensions || {}
+  if (!scaleX || !scaleY || !zoom) return null
+  const {t} = translator
   const favoritesKey = `favorites_${window.location.href}`
   const [favorites, setFavorites] = useState<FavoritePoint[]>(() => {
     try {
@@ -364,10 +349,7 @@ function DesktopMap(props: MapProps) {
     .map((c) => c.arguments.length)
     .reduce((a, b) => a + b, 0)
 
-  const {scaleX, scaleY, width, height} = dimensions || {}
-  if (!scaleX || !scaleY || !zoom) return null
-
-  if (!dimensions) {
+  if (!dimensions || !scaleX || !scaleY || !zoom) {
     console.log('NO DIMENSIONS???')
     return (
       <div
