@@ -1,10 +1,15 @@
 import {useGesture} from '@use-gesture/react'
 import React, {useEffect, useRef, useState} from 'react'
+
+// Components
+import ClusterDetails from '@/components/ClusterDetails'
 import CustomTitle from '@/components/CustomTitle'
 import {DesktopFullscreenFavorites} from '@/components/DesktopFullscreenFavorites'
 import {DesktopFullscreenFilter} from '@/components/DesktopFullscreenFilter'
 import {DesktopFullscreenTools} from '@/components/DesktopFullscreenTools'
 import Tooltip from '@/components/DesktopTooltip'
+
+// Hooks
 import useAutoResize from '@/hooks/useAutoResize'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useFilter from '@/hooks/useFilter'
@@ -13,8 +18,9 @@ import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
-import {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
-import {mean} from '@/utils'
+
+// Types
+import {Argument, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 
 type TooltipPosition = {
   x: number
@@ -37,122 +43,6 @@ type MapProps = Result & {
     question?: string
   }
   propertyMap: PropertyMap
-}
-
-function DotCircles(
-  clusters: Cluster[],
-  expanded: boolean,
-  tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
-  onlyCluster: string | undefined,
-  voteFilter: any,
-  filterFn: (arg: Argument) => boolean
-) {
-
-  return clusters.map((cluster) =>
-    cluster.arguments.filter(voteFilter.filter).map((arg) => {
-      const {arg_id, x, y} = arg
-      const isCurrentTooltip = tooltip?.arg_id === arg_id
-
-      let dotClass = 'default'
-      if (expanded) {
-        if (!isCurrentTooltip) {
-          dotClass = 'obscure'
-        }
-      } else if (!filterFn(arg)) {
-        dotClass = 'obscure'
-      }
-
-      let calculatedRadius
-      if (expanded && isCurrentTooltip) {
-        calculatedRadius = 8
-      } else {
-        calculatedRadius = 4
-      }
-
-      return (
-        <circle
-          className={`pointer-events-none ${dotClass}`}
-          key={arg_id}
-          id={arg_id}
-          cx={zoom.zoomX(scaleX(x))}
-          cy={zoom.zoomY(scaleY(y))}
-          fill={color(cluster.cluster_id, onlyCluster)}
-          r={calculatedRadius}
-        />
-      )
-    })
-  )
-}
-
-function ClusterLabels(
-  clusters: Cluster[],
-  fullscreen: boolean,
-  expanded: boolean,
-  highlightText: string,
-  tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
-  t: any,
-  onlyCluster: string | undefined,
-  showLabels: boolean,
-  showRatio: boolean,
-  totalArgs: number,
-) {
-  if (!fullscreen || !showLabels || zoom.dragging) {
-    return null
-  }
-
-  return (
-    <div>
-      {clusters.map((cluster) => {
-        const isHighlightMode = highlightText !== ''
-
-        let calculatedOpacity
-        const DEFAULT_OPACITY = 0.85
-        const LIGHT_OPACITY = 0.3
-        const HIDDEN = 0
-
-        if (isHighlightMode) {
-          calculatedOpacity = LIGHT_OPACITY
-          // nishio: ハイライトモードではラベルが濃いと点が見づらいため、透明度を下げる
-          // 将来的にはハイライトされた点を含むクラスタのみラベルを表示するように変更するといいかも
-        } else if (expanded) {
-          calculatedOpacity = LIGHT_OPACITY
-        } else if (tooltip?.cluster_id === cluster.cluster_id) {
-          // tooltipが表示されているクラスタのラベルは非表示
-          // tooltipが表示されているときは、その点がどのクラスタか表示されているため
-          calculatedOpacity = HIDDEN
-        } else {
-          calculatedOpacity = DEFAULT_OPACITY
-        }
-
-        return (
-          <div
-            className={'absolute opacity-90 bg-white p-2 max-w-lg rounded-lg pointer-events-none select-none transition-opacity duration-300 font-bold text-md'}
-            key={cluster.cluster_id}
-            style={{
-              transform: 'translate(-50%, -50%)',
-              left: zoom.zoomX(scaleX(mean(cluster.arguments.map(({x}) => x)))),
-              top: zoom.zoomY(scaleY(mean(cluster.arguments.map(({y}) => y)))),
-              color: color(cluster.cluster_id, onlyCluster),
-              opacity: calculatedOpacity,
-            }}
-          >
-            {t(cluster.cluster)}
-            {showRatio && (
-              <span>({Math.round((100 * cluster.arguments.length) / totalArgs)}%)</span>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 function DesktopMap(props: MapProps) {
@@ -289,6 +179,57 @@ function DesktopMap(props: MapProps) {
       },
     }
   )
+
+  // Performance measurement setup
+  useEffect(() => {
+    // Clear existing performance marks and measures
+    performance.clearMarks()
+    performance.clearMeasures()
+
+    // Mark the start of scatter plot rendering
+    performance.mark('scatter-plot-start')
+    console.log('%cScatter plot rendering started', 'color: #2196F3; font-weight: bold')
+    
+    // Create performance observer for paint metrics
+    const paintObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries()
+      entries.forEach(entry => {
+        if (entry.name === 'first-paint') {
+          console.log('%cFirst Paint:', 'color: #4CAF50; font-weight: bold', 
+            Math.round(entry.startTime), 'ms')
+        }
+        if (entry.name === 'first-contentful-paint') {
+          console.log('%cFirst Contentful Paint:', 'color: #4CAF50; font-weight: bold', 
+            Math.round(entry.startTime), 'ms')
+        }
+      })
+    })
+
+    // Create observer for Largest Contentful Paint
+    const lcpObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries()
+      const lastEntry = entries[entries.length - 1]
+      console.log('%cLargest Contentful Paint:', 'color: #4CAF50; font-weight: bold', 
+        Math.round(lastEntry.startTime), 'ms')
+      
+      // Mark the end of scatter plot rendering
+      performance.mark('scatter-plot-end')
+      performance.measure('scatter-plot-render-time', 'scatter-plot-start', 'scatter-plot-end')
+      const measures = performance.getEntriesByName('scatter-plot-render-time')
+      console.log('%cScatter plot render time:', 'color: #2196F3; font-weight: bold', 
+        Math.round(measures[0].duration), 'ms')
+    })
+
+    // Observe paint and LCP metrics
+    paintObserver.observe({ entryTypes: ['paint'] })
+    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
+
+    // Cleanup
+    return () => {
+      paintObserver.disconnect()
+      lcpObserver.disconnect()
+    }
+  }, []) // Run once on mount
 
   useEffect(() => {
     if (clusters.length === 0) return
@@ -508,19 +449,27 @@ function DesktopMap(props: MapProps) {
               },
             })}
           >
-            {/* DOT CIRCLES */}
-            {DotCircles(
-              clusters,
-              expanded,
-              tooltip,
-              zoom,
-              scaleX,
-              scaleY,
-              color,
-              onlyCluster,
-              voteFilter,
-              filterFn
-            )}
+            {/* CLUSTER DETAILS */}
+            <ClusterDetails
+              clusters={clusters}
+              fullScreen={fullScreen}
+              expanded={expanded}
+              tooltip={tooltip}
+              zoom={zoom}
+              scaleX={scaleX}
+              scaleY={scaleY}
+              color={color}
+              onlyCluster={onlyCluster}
+              voteFilter={voteFilter}
+              filterFn={filterFn}
+              showLabels={showLabels}
+              showRatio={showRatio}
+              t={t}
+              highlightText={highlightText}
+              totalArgs={totalArgs}
+              enableLazyLoading={true}
+              lazyLoadDelay={500}
+            />
             {/* お気に入りの表示 */}
             {showFavorites && (
               favorites.map((fav) => (
@@ -534,23 +483,6 @@ function DesktopMap(props: MapProps) {
               ))
             )}
           </svg>
-          {/* CLUSTER LABELS */}
-          {ClusterLabels(
-            clusters,
-            fullScreen,
-            expanded,
-            highlightText,
-            tooltip,
-            zoom,
-            scaleX,
-            scaleY,
-            color,
-            t,
-            onlyCluster,
-            showLabels,
-            showRatio,
-            totalArgs
-          )}
 
           {/* TOOLTIP */}
           {tooltip && (
