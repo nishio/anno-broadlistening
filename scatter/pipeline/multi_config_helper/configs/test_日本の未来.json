@@ -1,0 +1,45 @@
+{
+  "name": "日本の未来",
+  "question": "日本の未来に対して、あなたの意見を教えてください。",
+  "input": "dummy-comments-japan",
+  "model": "gpt-3.5-turbo",
+  "extraction": {
+    "workers": 3,
+    "limit": 20,
+    "model": "gpt-3.5-turbo",
+    "properties": [
+      "source",
+      "age"
+    ],
+    "prompt": "以下のコメントから、主張や意見を抽出してください。",
+    "categories": {
+      "genre": {
+        "politics": "政治に関する意見",
+        "economy": "経済に関する意見"
+      }
+    }
+  },
+  "clustering": {
+    "clusters": 5,
+    "min_cluster_size": 3,
+    "embedding": {
+      "model": "text-embedding-ada-002",
+      "batch_size": 32
+    }
+  },
+  "aggregation": {
+    "hidden_properties": {
+      "age": [
+        20,
+        30,
+        40,
+        50
+      ],
+      "source": [
+        "Google Form",
+        "X API"
+      ]
+    },
+    "summary_length": "medium"
+  }
+}
