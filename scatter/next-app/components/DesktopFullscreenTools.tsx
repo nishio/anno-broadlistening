@@ -25,6 +25,8 @@ type Props = {
   setShowRatio: React.Dispatch<React.SetStateAction<boolean>>
   showFavorites: boolean
   setShowFavorites: React.Dispatch<React.SetStateAction<boolean>>
+  clusterGranularity: number
+  setClusterGranularity: React.Dispatch<React.SetStateAction<number>>
 }
 
 export function DesktopFullscreenTools(props: Props) {
@@ -51,6 +53,17 @@ export function DesktopFullscreenTools(props: Props) {
             <ChartPieIcon className={props.showRatio ? 'text-blue-500' : 'text-gray-500'}/>
             <p className={'text-xs text-gray-700'}>{t('toolsDisplayPercentage')}</p>
           </button>
+          <div className="w-[120px] m-1 flex flex-col items-center">
+            <input
+              type="range"
+              min="8"
+              max="100"
+              value={props.clusterGranularity}
+              onChange={(e) => props.setClusterGranularity(Number(e.target.value))}
+              className="w-full"
+            />
+            <p className={'text-xs text-gray-700'}>{t('toolsClusterGranularity')}</p>
+          </div>
           <button className="w-[80px] m-1 flex flex-col items-center"
             onClick={() => typeof props.zoomReset === 'function' && props.zoomReset()}>
             <ScanSearchIcon className={props.zoomReset ? 'text-blue-500' : 'text-gray-500'}/>

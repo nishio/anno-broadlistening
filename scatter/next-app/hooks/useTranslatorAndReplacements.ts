@@ -55,6 +55,7 @@ const JapaneseUI: { [key: string]: string } = {
   toolsResetPosition: '初期位置に戻す',
   toolsDisplayFavorites: 'お気に入り一覧',
   toolsFilterSettings: 'フィルター設定',
+  toolsClusterGranularity: 'クラスタ粒度',
 }
 
 const useTranslatorAndReplacements = (

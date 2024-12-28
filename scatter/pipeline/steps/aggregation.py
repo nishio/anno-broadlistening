@@ -72,6 +72,12 @@ def aggregation(config):
     total_sampling_num = config["aggregation"]["sampling_num"]
     print("total sampling num:", total_sampling_num)
 
+    # Get desired cluster level from config, default to original clustering if not specified
+    cluster_level = config.get("clustering", {}).get("clusters", 50)
+    # Ensure cluster level is within valid range
+    cluster_level = max(8, min(100, cluster_level))
+    print(f"Using cluster level: {cluster_level}")
+
     results = {
         "clusters": [],
         "comments": {},
@@ -79,6 +85,7 @@ def aggregation(config):
         "translations": {},
         "overview": "",
         "config": config,
+        "cluster_level": cluster_level,  # Add current cluster level to results
     }
 
     arguments = pd.read_csv(f"outputs/{config['output_dir']}/args.csv")
@@ -107,14 +114,27 @@ def aggregation(config):
             translations = f.read()
         results["translations"] = json.loads(translations)
 
+    # Load cluster data
     clusters = pd.read_csv(f"outputs/{config['output_dir']}/clusters.csv")
     labels = pd.read_csv(f"outputs/{config['output_dir']}/labels.csv")
     takeaways = pd.read_csv(f"outputs/{config['output_dir']}/takeaways.csv")
     takeaways.set_index("cluster-id", inplace=True)
 
+    # Get cluster column name for desired level
+    cluster_level = config.get("clustering", {}).get("clusters", 50)
+    cluster_level = max(8, min(100, cluster_level))
+    cluster_col = f"cluster_level_{cluster_level}"
+    if cluster_col not in clusters.columns:
+        print(f"Warning: {cluster_col} not found, using default cluster-id column")
+        cluster_col = "cluster-id"
+    
+    # Update cluster IDs to use the selected level
+    clusters["cluster-id"] = clusters[cluster_col]
+
     print("relevant clusters score")
     print(clusters.sort_values(by="probability", ascending=False).head(10))
 
+    # Round numeric columns for display
     clusters["x"] = clusters["x"].astype(float).round(4)
     clusters["y"] = clusters["y"].astype(float).round(4)
     clusters["probability"] = clusters["probability"].astype(float).round(1)
@@ -130,10 +150,13 @@ def aggregation(config):
     total_sampled_num = 0
 
     sampled_comment_ids = []
-    for _, row in labels.iterrows():
-        cid = row["cluster-id"]
-        label = row["label"]
-        arg_rows = clusters[clusters["cluster-id"] == cid]
+    # Group clusters by the selected level
+    unique_clusters = clusters[cluster_col].unique()
+    for cid in unique_clusters:
+        # Get label for this cluster (fallback to cluster ID if no label exists)
+        label_row = labels[labels["cluster-id"] == cid]
+        label = label_row["label"].iloc[0] if not label_row.empty else f"Cluster {cid}"
+        arg_rows = clusters[clusters[cluster_col] == cid]
         c_arg_num = len(arg_rows)
         sampling_num = int(c_arg_num * sample_rate)
 

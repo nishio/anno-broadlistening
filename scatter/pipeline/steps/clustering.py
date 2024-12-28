@@ -43,6 +43,7 @@ def clustering(config):
     embeddings_array = np.asarray(embeddings_df["embedding"].values.tolist())
     clusters = config["clustering"]["clusters"]
 
+    # Always start with 100 clusters and merge down
     result = cluster_embeddings(
         docs=arguments_array,
         embeddings=embeddings_array,
@@ -50,9 +51,11 @@ def clustering(config):
             "arg-id": arguments_df["arg-id"].values,
             "comment-id": arguments_df["comment-id"].values,
         },
-        min_cluster_size=clusters,
-        n_topics=clusters,
+        min_cluster_size=8,  # Minimum cluster size
+        n_topics=clusters,  # Desired final cluster count
     )
+    
+    # Save all granularity levels to CSV
     result.to_csv(path, index=False)
 
 
@@ -64,6 +67,122 @@ def tokenize_japanese(text):
     ]
 
 
+def parse_similarity_score(llm_response: str) -> float:
+    """Parse the similarity score from LLM JSON response."""
+    import json
+    try:
+        response_data = json.loads(llm_response)
+        return float(response_data.get("similarity", 0.0))
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return 0.0
+
+def compute_cluster_distance(cluster1_docs, cluster2_docs):
+    """Compute semantic similarity between two clusters using LLM.
+    Returns a distance score (1 - similarity) between 0 and 1.
+    """
+    from services.llm import request_to_chat_openai
+    
+    # Prepare cluster summaries (join with newlines for readability)
+    cluster1_text = "\n".join(cluster1_docs)
+    cluster2_text = "\n".join(cluster2_docs)
+    
+    # Create prompt for similarity calculation
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a semantic similarity analyzer. Given two sets of text, analyze their semantic similarity and return a JSON response with a single 'similarity' field containing a float between 0.0 (completely different) and 1.0 (identical or extremely similar).
+
+Example response format:
+{"similarity": 0.85}
+
+Consider:
+- Semantic meaning over word overlap
+- Topic similarity
+- Context and implications
+- Overall message intent"""
+        },
+        {
+            "role": "user",
+            "content": f"""Compare the semantic similarity of these two text clusters:
+
+Cluster 1:
+{cluster1_text}
+
+Cluster 2:
+{cluster2_text}
+
+Return only a JSON object with the similarity score."""
+        }
+    ]
+    
+    try:
+        # Request similarity score from LLM
+        llm_response = request_to_chat_openai(messages, model="gpt-4", is_json=True)
+        similarity = parse_similarity_score(llm_response)
+        # Convert similarity to distance (1 - similarity)
+        return 1.0 - similarity
+    except Exception as e:
+        print(f"Error in LLM similarity calculation: {e}")
+        # Fallback to basic word overlap method if LLM fails
+        words1 = set(" ".join(cluster1_docs).split())
+        words2 = set(" ".join(cluster2_docs).split())
+        common_words = len(words1.intersection(words2))
+        total_words = len(words1.union(words2))
+        return 1.0 - (common_words / total_words if total_words > 0 else 0)
+
+def merge_adjacent_clusters(cluster_labels, adjacency, docs):
+    """Merge adjacent clusters based on their similarity, storing intermediate states.
+    Returns a dictionary mapping number of clusters to their corresponding labels."""
+    current_labels = cluster_labels.copy()
+    n_current_clusters = len(set(current_labels))
+    
+    # Store all granularity levels (8-100)
+    granularity_labels = {}
+    
+    # Create a mapping of cluster IDs to their documents
+    cluster_docs = {}
+    for doc_idx, cluster_id in enumerate(current_labels):
+        if cluster_id not in cluster_docs:
+            cluster_docs[cluster_id] = []
+        cluster_docs[cluster_id].append(docs[doc_idx])
+    
+    # Store initial state (100 clusters)
+    granularity_labels[n_current_clusters] = current_labels.copy()
+    
+    # While we have more than 8 clusters
+    while n_current_clusters > 8:
+        # Find the most similar adjacent clusters
+        min_distance = float('inf')
+        clusters_to_merge = None
+        
+        for c1, c2 in adjacency:
+            # Skip if either cluster no longer exists (was merged)
+            if c1 not in cluster_docs or c2 not in cluster_docs:
+                continue
+                
+            distance = compute_cluster_distance(cluster_docs[c1], cluster_docs[c2])
+            if distance < min_distance:
+                min_distance = distance
+                clusters_to_merge = (c1, c2)
+        
+        if clusters_to_merge is None:
+            break
+            
+        # Merge the clusters
+        c1, c2 = clusters_to_merge
+        # Merge documents
+        cluster_docs[c1].extend(cluster_docs[c2])
+        del cluster_docs[c2]
+        # Update labels
+        current_labels[current_labels == c2] = c1
+        n_current_clusters -= 1
+        
+        # Store the current state if it's within our target range (8-100)
+        if 8 <= n_current_clusters <= 100:
+            granularity_labels[n_current_clusters] = current_labels.copy()
+    
+    return granularity_labels
+
 def cluster_embeddings(
     docs,
     embeddings,
@@ -74,11 +193,12 @@ def cluster_embeddings(
 ):
     # (!) we import the following modules dynamically for a reason
     # (they are slow to load and not required for all pipelines)
-    SpectralClustering = import_module("sklearn.cluster").SpectralClustering
+    KMeans = import_module("sklearn.cluster").KMeans
     HDBSCAN = import_module("hdbscan").HDBSCAN
     UMAP = import_module("umap").UMAP
     CountVectorizer = import_module("sklearn.feature_extraction.text").CountVectorizer
     BERTopic = import_module("bertopic").BERTopic
+    Voronoi = import_module("scipy.spatial").Voronoi
 
     umap_model = UMAP(
         random_state=42,
@@ -97,17 +217,27 @@ def cluster_embeddings(
     # Fit the topic model.
     _, __ = topic_model.fit_transform(docs, embeddings=embeddings)
 
-    n_samples = len(embeddings)
-    n_neighbors = min(n_samples - 1, 10)
-    spectral_model = SpectralClustering(
-        n_clusters=n_topics,
-        affinity="nearest_neighbors",
-        n_neighbors=n_neighbors,  # Use the modified n_neighbors
-        random_state=42,
-    )
+    # Transform embeddings to 2D using UMAP
     umap_embeds = umap_model.fit_transform(embeddings)
-    cluster_labels = spectral_model.fit_predict(umap_embeds)
+    
+    # Use k-means for initial clustering (100 clusters by default)
+    kmeans_model = KMeans(
+        n_clusters=100,  # Default to 100 clusters as requested
+        random_state=42,
+        n_init="auto"  # Use the new recommended default
+    )
+    cluster_labels = kmeans_model.fit_predict(umap_embeds)
+    
+    # Compute Voronoi diagram from cluster centers to find adjacent clusters
+    vor = Voronoi(kmeans_model.cluster_centers_)
+    adjacency = set()
+    for simplex in vor.ridge_points:
+        adjacency.add(tuple(sorted(simplex)))
+    
+    # Get all granularity levels from 100 down to 8
+    granularity_labels = merge_adjacent_clusters(cluster_labels, adjacency, docs)
 
+    # Create base result DataFrame
     result = topic_model.get_document_info(
         docs=docs,
         metadata={
@@ -119,6 +249,12 @@ def cluster_embeddings(
 
     result.columns = [c.lower() for c in result.columns]
     result = result[["arg-id", "x", "y", "probability"]]
-    result["cluster-id"] = cluster_labels
+    
+    # Add columns for each granularity level
+    for n_clusters, labels in granularity_labels.items():
+        result[f"cluster_level_{n_clusters}"] = labels
+    
+    # Set the requested number of clusters as the default cluster-id
+    result["cluster-id"] = granularity_labels.get(n_topics, granularity_labels[min(n_topics, max(granularity_labels.keys()))])
 
     return result
