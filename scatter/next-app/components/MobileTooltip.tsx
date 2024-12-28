@@ -1,9 +1,27 @@
-import {CSSProperties} from 'react'
+import React, {CSSProperties} from 'react'
 import VideoLink from './VideoLink'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import {Zoom} from '@/hooks/useZoom'
 import {ThumbDown, ThumbUp} from '@/icons'
 import {Dimensions, Point} from '@/types'
+
+// Define component types
+interface _IconProps {
+  className?: string;
+}
+
+interface _TooltipStyle extends React.CSSProperties {
+  position: 'absolute';
+  left?: number;
+  right?: number;
+  top?: number | string;
+  bottom?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  overflowY: 'auto';
+  zIndex: number;
+  pointerEvents?: 'none';
+}
 
 type TooltipProps = {
   point: Point
@@ -14,14 +32,14 @@ type TooltipProps = {
   translator: Translator
 }
 
-const Tooltip = ({
+const Tooltip: React.FC<TooltipProps> = ({
   point,
   dimensions,
   expanded,
   zoom,
   fullScreen,
   translator,
-}: TooltipProps) => {
+}) => {
   const {scaleX, scaleY, width, height} = dimensions
   const {zoomX, zoomY} = zoom
   const {t} = translator
@@ -38,7 +56,7 @@ const Tooltip = ({
   if (!fullScreen) {
     // ツールチップをカーソルの下に表示
     let tooltipLeft = x - tooltipWidth / 2
-    let tooltipTop = y + 20 // カーソルの少し下に表示
+    let tooltipTop = y + 25 // カーソルから適度な距離を確保
 
     // 左端からはみ出さないように調整
     if (tooltipLeft < 0) {
@@ -50,7 +68,7 @@ const Tooltip = ({
     }
     // 下端からはみ出さないように調整
     if (tooltipTop + tooltipHeight > height) {
-      tooltipTop = y - tooltipHeight - 20 // 上に表示
+      tooltipTop = y - tooltipHeight - 25 // 上に表示し、カーソルとの距離を確保
     }
 
     style = {
@@ -67,8 +85,8 @@ const Tooltip = ({
       left: x > width / 2 ? undefined : x,
       right: x > width / 2 ? width - x : undefined,
       top: 0,
-      maxWidth: width / 1.3,
-      maxHeight: height / 2,
+      maxWidth: Math.min(400, width / 1.3),
+      maxHeight: Math.min(500, height / 2),
       overflowY: 'auto',
       zIndex: 10,
     }
@@ -79,8 +97,8 @@ const Tooltip = ({
       right: x > width / 2 ? width - x : undefined,
       top: y > height / 2 ? undefined : y,
       bottom: y > height / 2 ? height - y : undefined,
-      maxWidth: width / 1.3,
-      maxHeight: height / 2,
+      maxWidth: Math.min(400, width / 1.3),
+      maxHeight: Math.min(500, height / 2),
       overflowY: 'auto',
       pointerEvents: 'none',
       zIndex: 10,

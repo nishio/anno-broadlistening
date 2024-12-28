@@ -1,8 +1,22 @@
 import {BookmarkCheckIcon, BookmarkIcon} from 'lucide-react'
-import React from 'react'
+import React, {type CSSProperties as _CSSProperties} from 'react'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import {Dimensions, Point} from '@/types'
+
+// Define component types
+type _TooltipStyle = React.CSSProperties & {
+  position: 'absolute';
+  left?: string | number;
+  top?: string | number;
+  transform?: string;
+  background: string;
+  padding: string;
+  borderRadius: string;
+  maxWidth: string;
+  zIndex: number;
+  pointerEvents?: 'none';
+}
 
 type TooltipProps = {
   point: Point
@@ -50,7 +64,7 @@ function Tooltip(props: TooltipProps) {
       position: 'absolute',
       left: position.x,
       top: position.y,
-      transform: 'translate(10px, -10px)', // カーソルの近くに表示
+      transform: 'translate(15px, -15px)', // カーソルから少し離して表示
       background: 'rgba(255, 255, 255, 0.9)',
       padding: '10px',
       borderRadius: '4px',

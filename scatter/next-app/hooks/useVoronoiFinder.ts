@@ -4,6 +4,7 @@ import {Zoom} from './useZoom'
 import {Argument, Cluster, CommentsMap, Dimensions, Point} from '@/types'
 
 type FilterFn = (arg: Argument) => boolean
+type PointerEvent = React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>
 
 const useVoronoiFinder = (
   clusters: Cluster[],
@@ -16,7 +17,7 @@ const useVoronoiFinder = (
   filterFn?: FilterFn,
 ) => {
   return useMemo(() => {
-    if (!dimensions) return () => null as any
+    if (!dimensions) return () => null
     const {width, height, scaleX, scaleY} = dimensions
 
     let points: Point[] = clusters.flatMap((cluster) =>
@@ -28,31 +29,44 @@ const useVoronoiFinder = (
       }))
     )
 
-    // filterFnがあればpointをフィルタ
     if (filterFn) {
       points = points.filter(filterFn)
     }
 
     const layout = voronoi<Point>({
-      x: (d) => scaleX(d.x),
-      y: (d) => scaleY(d.y),
+      x: (d: Point) => scaleX(d.x),
+      y: (d: Point) => scaleY(d.y),
       width,
       height,
     })(points)
 
-    return (mouseEvent: any) => {
-      // FIXME mouseEvent 以外が渡されることがある
-      const rect = mouseEvent.target?.getBoundingClientRect!() || {left: 0, top: 0} // FIXME
-      const x = zoom.unZoomX(mouseEvent.clientX - rect.left)
-      const y = zoom.unZoomY(mouseEvent.clientY - rect.top)
+    return (event: PointerEvent | undefined) => {
+      if (!event?.target) return null
+
+      const target = event.target as SVGSVGElement
+      const rect = target.getBoundingClientRect()
+      if (!rect) return null
+
+      const clientX = 'touches' in event 
+        ? event.touches[0]?.clientX ?? event.changedTouches[0]?.clientX
+        : event.clientX
+      const clientY = 'touches' in event
+        ? event.touches[0]?.clientY ?? event.changedTouches[0]?.clientY
+        : event.clientY
+
+      if (clientX === undefined || clientY === undefined) return null
+
+      const x = zoom.unZoomX(clientX - rect.left)
+      const y = zoom.unZoomY(clientY - rect.top)
       const adjustedRadius = baseRadius / zoom.scale
       const found = layout.find(x, y, adjustedRadius)
 
-      if (onlyCluster && found && found.data.cluster_id !== onlyCluster)
+      if (onlyCluster && found && found.data.cluster_id !== onlyCluster) {
         return null
+      }
       return found
     }
-  }, [clusters, dimensions, filterFn, zoom])
+  }, [clusters, dimensions, filterFn, zoom, color, comments, onlyCluster, baseRadius])
 }
 
 export default useVoronoiFinder
