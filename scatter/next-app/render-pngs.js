@@ -63,8 +63,9 @@ async function captureScatterPlot(page, viewport, selector, outputPath) {
 }
 
 async function generatePNGs() {
-  let server;
-  let browser;
+  let server = null;
+  let browser = null;
+  let page = null;
   
   try {
     // Ensure public directory exists
@@ -77,7 +78,7 @@ async function generatePNGs() {
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    const page = await browser.newPage();
+    page = await browser.newPage();
     
     // Set default timeout to 60 seconds to match other timeouts
     page.setDefaultTimeout(60000);
@@ -250,8 +251,48 @@ async function generatePNGs() {
       console.log('Navigating to report page...');
       await page.goto(`http://localhost:3000/report/${report}`, {
         waitUntil: ['networkidle0', 'load', 'domcontentloaded'],
-        timeout: 60000
+        timeout: 120000
       });
+      
+      // Wait for initial page load and React hydration
+      console.log('Waiting for page load and React hydration...');
+      await page.waitForFunction(
+        () => {
+          const isLoaded = document.readyState === 'complete';
+          const isHydrated = window.__NEXT_DATA__ !== undefined;
+          const hasApp = document.getElementById('__next')?.children.length > 0;
+          console.log('Page state:', { isLoaded, isHydrated, hasApp });
+          return isLoaded && isHydrated && hasApp;
+        },
+        { timeout: 60000 }
+      );
+        
+        // Add error listeners
+        await page.evaluate(() => {
+          window.addEventListener('error', (event) => {
+            console.error('React Error:', event.error);
+          });
+          
+          // Set up mutation observer to track DOM changes
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList') {
+                const plot = document.querySelector('[data-scatter-plot="main"]');
+                if (plot) {
+                  console.log('Scatter plot found via mutation observer');
+                }
+              }
+            });
+          });
+          
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        });
+        
+        // Wait a bit for initial render
+        await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)));
       
       // Fix script and link paths
       await page.evaluate(() => {
@@ -289,18 +330,65 @@ async function generatePNGs() {
       // Wait for React to hydrate and scatter plot
       console.log('Waiting for React hydration and scatter plot...');
       
-      // First wait for React hydration
+      // Wait for scatter plot to be rendered
+      console.log('Waiting for scatter plot to render...');
       await page.waitForFunction(
         () => {
+          // Log the current state of the app
           const app = document.getElementById('__next');
-          console.log('App element found:', !!app);
-          if (!app) return false;
+          console.log('App state:', {
+            exists: !!app,
+            childCount: app?.children?.length || 0,
+            innerHTML: app?.innerHTML?.substring(0, 100) + '...'
+          });
           
-          const hasReactProps = Object.keys(app).some(key => key.startsWith('__reactProps$'));
-          console.log('Has React props:', hasReactProps);
-          return app && hasReactProps;
+          // Try different selectors for the scatter plot
+          const selectors = [
+            '[data-scatter-plot="main"]',
+            'svg',
+            '.scatter-plot',
+            '#scatter-plot'
+          ];
+          
+          let plot = null;
+          for (const selector of selectors) {
+            const element = document.querySelector(selector);
+            if (element) {
+              console.log(`Found element with selector: ${selector}`);
+              plot = element;
+              break;
+            }
+          }
+          
+          if (!plot) {
+            console.log('No scatter plot found with any selector');
+            return false;
+          }
+          
+          // Check plot dimensions and visibility
+          const rect = plot.getBoundingClientRect();
+          const style = window.getComputedStyle(plot);
+          const state = {
+            selector: plot.getAttribute('data-scatter-plot') || plot.id || plot.className,
+            width: rect.width,
+            height: rect.height,
+            display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
+            childCount: plot.children.length,
+            hasPoints: plot.querySelectorAll('circle').length > 0,
+            hasPath: plot.querySelectorAll('path').length > 0
+          };
+          console.log('Scatter plot state:', state);
+          
+          // Plot is ready when it has either points or paths and dimensions
+          const hasContent = state.hasPoints || state.hasPath;
+          const hasDimensions = rect.width > 0 && rect.height > 0;
+          console.log('Plot readiness:', { hasContent, hasDimensions });
+          
+          return hasContent && hasDimensions;
         },
-        { timeout: 30000 }
+        { timeout: 180000 }
       );
       
       console.log('React hydrated, waiting for data loading...');
@@ -413,7 +501,7 @@ async function generatePNGs() {
         console.log('Scatter plot found with dimensions:', dimensions);
         
         // Short wait for any final rendering
-        await page.waitForTimeout(1000);
+        await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)));
         
       } catch (error) {
         console.error('Error waiting for scatter plot:', error);
@@ -467,40 +555,50 @@ async function generatePNGs() {
       }
     }
     
-    // Cleanup
-    console.log('Cleaning up...');
-    if (server) {
-      await new Promise((resolve) => {
-        server.close(() => {
-          console.log('Server closed');
-          resolve();
-        });
-      });
-    }
-    if (browser) {
-      await browser.close();
-      console.log('Browser closed');
-    }
     console.log('PNG generation complete!');
     
   } catch (error) {
     console.error('Error generating PNGs:', error);
-    // Cleanup on error
-    if (server) {
-      await new Promise((resolve) => {
-        server.close(() => {
-          console.log('Server closed');
-          resolve();
+    throw error;  // Re-throw to be handled by the finally block
+  } finally {
+    // Cleanup
+    console.log('Cleaning up...');
+    
+    try {
+      if (page) {
+        await page.close();
+        console.log('Page closed');
+      }
+    } catch (err) {
+      console.error('Error closing page:', err);
+    }
+    
+    try {
+      if (browser) {
+        await browser.close();
+        console.log('Browser closed');
+      }
+    } catch (err) {
+      console.error('Error closing browser:', err);
+    }
+    
+    try {
+      if (server) {
+        await new Promise((resolve) => {
+          server.close(() => {
+            console.log('Server closed');
+            resolve();
+          });
         });
-      });
+      }
+    } catch (err) {
+      console.error('Error closing server:', err);
     }
-    if (browser) {
-      await browser.close();
-      console.log('Browser closed');
-    }
-    process.exit(1);
   }
 }
 
 // Run the PNG generation
-generatePNGs();
+generatePNGs().catch(error => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});
