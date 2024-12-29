@@ -86,9 +86,8 @@ async function generatePNGs() {
     console.log('Starting local server...');
     
     // Verify static export directory exists and has content
-    const staticDir = process.env.REPORT 
-      ? path.resolve(__dirname, `../pipeline/outputs/${process.env.REPORT}/report`)
-      : path.resolve(__dirname, 'out');
+    // Use Next.js output directory
+    const staticDir = path.resolve(__dirname, '.next/server/pages');
     console.log('Static directory path:', staticDir);
     
     if (!fs.existsSync(staticDir)) {
@@ -99,6 +98,7 @@ async function generatePNGs() {
     const staticFiles = fs.readdirSync(staticDir);
     console.log('Static directory contents:', staticFiles);
     
+    // Check for report page directory
     if (!staticFiles.includes('report')) {
       console.error('No report directory found in static directory');
       throw new Error('Missing report directory in static export');
