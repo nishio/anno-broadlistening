@@ -1,10 +1,14 @@
 import {useGesture} from '@use-gesture/react'
 import React, {useEffect, useRef, useState} from 'react'
+
+// Components
 import CustomTitle from '@/components/CustomTitle'
 import {DesktopFullscreenFavorites} from '@/components/DesktopFullscreenFavorites'
 import {DesktopFullscreenFilter} from '@/components/DesktopFullscreenFilter'
 import {DesktopFullscreenTools} from '@/components/DesktopFullscreenTools'
 import Tooltip from '@/components/DesktopTooltip'
+
+// Hooks
 import useAutoResize from '@/hooks/useAutoResize'
 import {ColorFunc} from '@/hooks/useClusterColor'
 import useFilter from '@/hooks/useFilter'
@@ -12,7 +16,9 @@ import useInferredFeatures from '@/hooks/useInferredFeatures'
 import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
-import useZoom from '@/hooks/useZoom'
+import useZoom, {Zoom} from '@/hooks/useZoom'
+
+// Types and Utils
 import {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 import {mean} from '@/utils'
 
@@ -43,12 +49,12 @@ function DotCircles(
   clusters: Cluster[],
   expanded: boolean,
   tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
+  zoom: Zoom,
+  scaleX: (x: number) => number,
+  scaleY: (y: number) => number,
+  color: ColorFunc,
   onlyCluster: string | undefined,
-  voteFilter: any,
+  voteFilter: { filter: (arg: Argument) => boolean },
   filterFn: (arg: Argument) => boolean
 ) {
 
@@ -94,11 +100,11 @@ function ClusterLabels(
   expanded: boolean,
   highlightText: string,
   tooltip: Point | null,
-  zoom: any,
-  scaleX: any,
-  scaleY: any,
-  color: any,
-  t: any,
+  zoom: Zoom,
+  scaleX: (x: number) => number,
+  scaleY: (y: number) => number,
+  color: ColorFunc,
+  t: (txt?: string) => string | undefined,
   onlyCluster: string | undefined,
   showLabels: boolean,
   showRatio: boolean,
@@ -144,7 +150,7 @@ function ClusterLabels(
               opacity: calculatedOpacity,
             }}
           >
-            {t(cluster.cluster)}
+            {t?.(cluster.cluster)}
             {showRatio && (
               <span>({Math.round((100 * cluster.arguments.length) / totalArgs)}%)</span>
             )}
@@ -371,7 +377,7 @@ function DesktopMap(props: MapProps) {
     )
   }
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: React.MouseEvent) => {
     if (tooltip && !expanded) {
       setExpanded(true)
     } else if (expanded) {
@@ -391,7 +397,7 @@ function DesktopMap(props: MapProps) {
 
   let animationFrameId: number | null = null
 
-  const handleMove = (e: any) => {
+  const handleMove = (e: React.MouseEvent) => {
     if (expanded) return
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId)
@@ -499,10 +505,11 @@ function DesktopMap(props: MapProps) {
           <svg
             width={width!}
             height={height!}
+            data-scatter-plot="main"
             {...bind()}
             {...zoom.events({
-              onClick: handleClick,
-              onMove: handleMove,
+              onClick: (e: React.MouseEvent<Element, MouseEvent>) => handleClick(e),
+              onMove: (e: React.MouseEvent<Element, MouseEvent>) => handleMove(e),
               onDrag: () => {
                 setTooltip(null)
               },

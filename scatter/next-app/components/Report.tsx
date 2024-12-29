@@ -18,12 +18,33 @@ const isMobileDevice = () => {
   return mobilePattern.test(navigator.userAgent)
 }
 
+const getPngPath = (clusterId: string | undefined, isMobile: boolean) => {
+  const size = isMobile ? 'mobile' : 'pc'
+  const id = clusterId ? `cluster-${clusterId}` : 'main'
+  return `/scatter_${id}_${size}.png`
+}
+
 const ResponsiveMap = (props: any) => {
   const [isMobile, setIsMobile] = useState(false)
+  const usePng = process.env.USE_PNG === 'true' && !props.fullScreen
 
   useEffect(() => {
     setIsMobile(isMobileDevice())
   }, [])
+
+  if (usePng) {
+    const pngPath = getPngPath(props.onlyCluster, isMobile)
+    return (
+      <div style={{ width: props.width, height: props.height }}>
+        <img
+          src={pngPath}
+          alt={`Scatter plot ${props.onlyCluster || 'main'}`}
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          {...props}
+        />
+      </div>
+    )
+  }
 
   return isMobile ? <MobileMap {...props} /> : <DesktopMap {...props} />
 }
@@ -91,6 +112,7 @@ function Report(props: ReportProps) {
                 color={color}
                 width={reportWidth}
                 height={450}
+                data-scatter-plot="main"
               />
               <button
                 className="my-2 underline"
@@ -138,6 +160,7 @@ function Report(props: ReportProps) {
                       width={reportWidth}
                       height={350}
                       onlyCluster={t(cluster.cluster_id)}
+                      data-scatter-plot={`cluster-${cluster.cluster_id}`}
                     />
                     <button
                       className="my-2 underline"
