@@ -35,30 +35,46 @@ function ClusterHulls({
           .filter(filterFn)
           .map(arg => [arg.x, arg.y] as [number, number])
 
-        // Skip clusters with less than 3 points (can't form a hull)
-        if (filteredPoints.length < 3) return null
+        // Handle different cases based on number of points
+        if (filteredPoints.length === 0) return null
 
-        // Calculate hull points in domain space
-        const hullPoints = polygonHull(filteredPoints)
-        if (!hullPoints) return null
+        let pathData: string
+        if (filteredPoints.length === 1) {
+          // For single point, create a circle
+          const [x, y] = filteredPoints[0]
+          const radius = 10 // pixels in screen space
+          const cx = zoom.zoomX(scaleX(x))
+          const cy = zoom.zoomY(scaleY(y))
+          pathData = `M ${cx-radius},${cy} a ${radius},${radius} 0 1,0 ${radius*2},0 a ${radius},${radius} 0 1,0 ${-radius*2},0`
+        } else if (filteredPoints.length === 2) {
+          // For two points, create a thick line with rounded ends
+          const [[x1, y1], [x2, y2]] = filteredPoints
+          const p1 = [zoom.zoomX(scaleX(x1)), zoom.zoomY(scaleY(y1))]
+          const p2 = [zoom.zoomX(scaleX(x2)), zoom.zoomY(scaleY(y2))]
+          const radius = 5 // pixels in screen space
+          pathData = `M ${p1[0]},${p1[1]} L ${p2[0]},${p2[1]}`
+        } else {
+          // For 3+ points, create convex hull
+          const hullPoints = polygonHull(filteredPoints)
+          if (!hullPoints) return null
 
-        // Transform hull points to screen space
-        const transformedHullPoints = hullPoints.map((point: [number, number]) => [
-          zoom.zoomX(scaleX(point[0])),
-          zoom.zoomY(scaleY(point[1]))
-        ])
-
-        // Create SVG path data
-        const pathData = `M ${transformedHullPoints.join(' L ')} Z`
+          // Transform hull points to screen space
+          const transformedHullPoints = hullPoints.map((point: [number, number]) => [
+            zoom.zoomX(scaleX(point[0])),
+            zoom.zoomY(scaleY(point[1]))
+          ])
+          pathData = `M ${transformedHullPoints.join(' L ')} Z`
+        }
 
         return (
           <path
             key={cluster.cluster_id}
             d={pathData}
-            fill={color(cluster.cluster_id, onlyCluster)}
+            fill={filteredPoints.length <= 2 ? "none" : color(cluster.cluster_id, onlyCluster)}
             fillOpacity={expanded ? 0.05 : 0.1}
             stroke={color(cluster.cluster_id, onlyCluster)}
-            strokeWidth={2}
+            strokeWidth={filteredPoints.length === 2 ? 4 : 2}
+            strokeLinecap={filteredPoints.length === 2 ? "round" : "butt"}
             className="pointer-events-none"
           />
         )
