@@ -13,9 +13,9 @@ import useRelativePositions from '@/hooks/useRelativePositions'
 import {Translator} from '@/hooks/useTranslatorAndReplacements'
 import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
+import ClusterHulls from '@/components/ClusterHulls'
 import {Argument, Cluster, FavoritePoint, Point, PropertyMap, Result} from '@/types'
 import {mean} from '@/utils'
-import ClusterHulls from '@/components/ClusterHulls'
 
 type TooltipPosition = {
   x: number
@@ -511,7 +511,6 @@ function DesktopMap(props: MapProps) {
           >
             <ClusterHulls
               clusters={clusters}
-              expanded={expanded}
               zoom={zoom}
               scaleX={scaleX}
               scaleY={scaleY}

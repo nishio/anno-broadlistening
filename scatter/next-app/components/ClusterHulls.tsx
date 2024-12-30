@@ -3,23 +3,25 @@ import { polygonHull } from 'd3-polygon';
 import { Cluster } from '../types';
 
 interface ClusterHullsProps {
-  clusters: Cluster[];
-  expanded: boolean;
+  clusters: Cluster[]
   zoom: {
-    zoomX: (x: number) => number;
-    zoomY: (y: number) => number;
-  };
-  scaleX: (x: number) => number;
-  scaleY: (y: number) => number;
-  color: (id: string, onlyCluster?: string) => string;
-  onlyCluster: string | undefined;
-  voteFilter: (arg: any) => boolean;
-  filterFn: (arg: any) => boolean;
+    zoomX: (x: number) => number
+    zoomY: (y: number) => number
+    events: (handlers: any) => any
+    panx: number
+    pany: number
+    dragging?: boolean
+  }
+  scaleX: (x: number) => number
+  scaleY: (y: number) => number
+  color: (id: string, onlyCluster?: string) => string
+  onlyCluster: string | undefined
+  voteFilter: (arg: any) => boolean
+  filterFn: (arg: any) => boolean
 }
 
 const ClusterHulls: React.FC<ClusterHullsProps> = ({
   clusters,
-  expanded,
   zoom,
   scaleX,
   scaleY,
