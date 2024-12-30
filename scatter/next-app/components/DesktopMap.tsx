@@ -266,7 +266,7 @@ function DesktopMap(props: MapProps) {
     .reduce((a, b) => a + b, 0)
 
   const {scaleX, scaleY, width, height} = dimensions || {}
-  const {t} = translator
+  const {t} = props.translator
 
   const favoritesKey = `favorites_${window.location.href}`
 
@@ -582,7 +582,7 @@ function DesktopMap(props: MapProps) {
             scaleX={scaleX}
             scaleY={scaleY}
             color={color}
-            t={translator}
+            t={t}
             onlyCluster={onlyCluster}
             showLabels={showLabels}
             showRatio={showRatio}
