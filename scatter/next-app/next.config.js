@@ -2,16 +2,15 @@
 
 const report = process.env.REPORT
 
-const nextConfig = !report
-  ? {
-      output: "export",
-      distDir: "out",
-    }
-  : {
-      output: "export",
-      distDir: `../pipeline/outputs/${report}/report`,
-      assetPrefix: "./",
-      env: { REPORT: report },
-    }
+const nextConfig = {
+  env: { REPORT: report },
+  ...(process.env.NODE_ENV === 'production' && report
+    ? {
+        output: "export",
+        distDir: `../pipeline/outputs/${report}/report`,
+        assetPrefix: "./"
+      }
+    : {})
+}
 
 module.exports = nextConfig
