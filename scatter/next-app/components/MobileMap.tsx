@@ -12,6 +12,7 @@ import useVoronoiFinder from '@/hooks/useVoronoiFinder'
 import useZoom from '@/hooks/useZoom'
 import {Point, Result} from '@/types'
 import {isTouchDevice, mean} from '@/utils'
+import ClusterHulls from '@/components/ClusterHulls'
 
 type MapProps = Result & {
   width?: number,
@@ -119,6 +120,17 @@ function MobileMap(props: MapProps) {
             },
           })}
         >
+          <ClusterHulls
+            clusters={clusters}
+            expanded={expanded}
+            zoom={zoom}
+            scaleX={scaleX}
+            scaleY={scaleY}
+            color={color}
+            onlyCluster={onlyCluster}
+            voteFilter={voteFilter.filter}
+            filterFn={arg => true}
+          />
           {/* DOT CIRCLES */}
           {clusters.map((cluster) =>
             cluster.arguments
