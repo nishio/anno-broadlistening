@@ -7,7 +7,7 @@ export async function getStaticPaths() {
   if (report && report.length) {
     return {paths: [{params: {name: report}}], fallback: false}
   }
-  const subfolders = ['aipubcom']
+  const subfolders = ['aipubcom', 'example-polis']
   return {paths: subfolders.map((name: string) => ({params: {name}})), fallback: false}
 }
 
