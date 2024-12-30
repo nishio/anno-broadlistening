@@ -37,17 +37,17 @@ const ClusterHulls: React.FC<ClusterHullsProps> = ({
         const points = cluster.arguments
           .filter(filterFn)
           .filter(voteFilter)
-          .map((arg) => [zoom.zoomX(scaleX(arg.x)), zoom.zoomY(scaleY(arg.y))] as [number, number]);
+          .map((arg) => [zoom.zoomX(scaleX(arg.x)), zoom.zoomY(scaleY(arg.y))] as [number, number])
 
-        if (points.length === 0) return null;
+        if (points.length === 0) return null
         
         // Only show selected cluster if one is selected
-        if (onlyCluster !== null && cluster.cluster_id !== onlyCluster) return null;
+        if (onlyCluster !== null && cluster.cluster_id !== onlyCluster) return null
 
         // Handle different cases based on number of points
         if (points.length === 1) {
           // For single point, draw a circle
-          const [x, y] = points[0];
+          const [x, y] = points[0]
           return (
             <circle
               key={`hull-${cluster.cluster_id}`}
@@ -60,10 +60,10 @@ const ClusterHulls: React.FC<ClusterHullsProps> = ({
               strokeWidth={2}
               strokeOpacity={0.5}
             />
-          );
+          )
         } else if (points.length === 2) {
           // For two points, draw a thick line
-          const [[x1, y1], [x2, y2]] = points;
+          const [[x1, y1], [x2, y2]] = points
           return (
             <line
               key={`hull-${cluster.cluster_id}`}
@@ -75,11 +75,11 @@ const ClusterHulls: React.FC<ClusterHullsProps> = ({
               strokeWidth={4}
               strokeOpacity={0.5}
             />
-          );
+          )
         } else {
           // For three or more points, compute and draw convex hull
-          const hull = polygonHull(points as Array<[number, number]>);
-          if (!hull) return null;
+          const hull = polygonHull(points as Array<[number, number]>)
+          if (!hull) return null
 
           return (
             <path
@@ -91,11 +91,11 @@ const ClusterHulls: React.FC<ClusterHullsProps> = ({
               strokeWidth={2}
               strokeOpacity={0.5}
             />
-          );
+          )
         }
       })}
     </g>
-  );
-};
+  )
+}
 
-export default ClusterHulls;
+export default ClusterHulls
