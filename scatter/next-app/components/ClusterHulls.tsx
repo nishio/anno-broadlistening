@@ -1,6 +1,6 @@
-import React from 'react';
-import { polygonHull } from 'd3-polygon';
-import { Cluster } from '../types';
+import { polygonHull } from 'd3-polygon'
+import React from 'react'
+import { Cluster } from '../types'
 
 interface ClusterHullsProps {
   clusters: Cluster[]
