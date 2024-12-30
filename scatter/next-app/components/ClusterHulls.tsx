@@ -1,7 +1,7 @@
-import React from 'react'
 import {polygonHull} from 'd3-polygon'
-import {Cluster} from '@/types'
+import React from 'react'
 import {ColorFunc} from '@/hooks/useClusterColor'
+import {Cluster} from '@/types'
 
 type ClusterHullsProps = {
   clusters: Cluster[]
@@ -51,7 +51,6 @@ function ClusterHulls({
           const [[x1, y1], [x2, y2]] = filteredPoints
           const p1 = [zoom.zoomX(scaleX(x1)), zoom.zoomY(scaleY(y1))]
           const p2 = [zoom.zoomX(scaleX(x2)), zoom.zoomY(scaleY(y2))]
-          const radius = 5 // pixels in screen space
           pathData = `M ${p1[0]},${p1[1]} L ${p2[0]},${p2[1]}`
         } else {
           // For 3+ points, create convex hull
@@ -70,11 +69,11 @@ function ClusterHulls({
           <path
             key={cluster.cluster_id}
             d={pathData}
-            fill={filteredPoints.length <= 2 ? "none" : color(cluster.cluster_id, onlyCluster)}
+            fill={filteredPoints.length <= 2 ? 'none' : color(cluster.cluster_id, onlyCluster)}
             fillOpacity={expanded ? 0.05 : 0.1}
             stroke={color(cluster.cluster_id, onlyCluster)}
             strokeWidth={filteredPoints.length === 2 ? 4 : 2}
-            strokeLinecap={filteredPoints.length === 2 ? "round" : "butt"}
+            strokeLinecap={filteredPoints.length === 2 ? 'round' : 'butt'}
             className="pointer-events-none"
           />
         )

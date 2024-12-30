@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react'
-import ClusterHulls from '@/components/ClusterHulls'
 import {useGesture} from 'react-use-gesture'
+import ClusterHulls from '@/components/ClusterHulls'
 import CustomTitle from '@/components/CustomTitle'
 import Tooltip from '@/components/MobileTooltip'
 import useAutoResize from '@/hooks/useAutoResize'
@@ -129,7 +129,7 @@ function MobileMap(props: MapProps) {
             color={color}
             onlyCluster={onlyCluster}
             voteFilter={voteFilter}
-            filterFn={(arg) => true}
+            filterFn={(_arg) => true}
           />
           {/* DOT CIRCLES */}
           {clusters.map((cluster) =>
