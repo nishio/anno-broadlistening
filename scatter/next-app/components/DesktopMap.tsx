@@ -1,5 +1,6 @@
 import {useGesture} from '@use-gesture/react'
 import React, {useEffect, useRef, useState} from 'react'
+import ClusterHulls from '@/components/ClusterHulls'
 import CustomTitle from '@/components/CustomTitle'
 import {DesktopFullscreenFavorites} from '@/components/DesktopFullscreenFavorites'
 import {DesktopFullscreenFilter} from '@/components/DesktopFullscreenFilter'
@@ -508,6 +509,16 @@ function DesktopMap(props: MapProps) {
               },
             })}
           >
+            <ClusterHulls
+              clusters={clusters}
+              zoom={zoom}
+              scaleX={scaleX}
+              scaleY={scaleY}
+              color={color}
+              onlyCluster={onlyCluster}
+              voteFilter={voteFilter.filter}
+              filterFn={filterFn}
+            />
             {/* DOT CIRCLES */}
             {DotCircles(
               clusters,

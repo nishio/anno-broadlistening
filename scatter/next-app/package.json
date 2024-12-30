@@ -11,10 +11,12 @@
     "upgrade": "npx npm-check-updates --interactive"
   },
   "dependencies": {
+    "@types/d3-polygon": "^3.0.2",
     "@use-gesture/react": "^10.3.1",
     "@visx/voronoi": "^3.12.0",
     "@visx/zoom": "^3.12.0",
     "classnames": "^2.5.1",
+    "d3-polygon": "^3.0.1",
     "diff": "^5.1.0",
     "lucide-react": "^0.469.0",
     "next": "^14.2.15",
