@@ -37,6 +37,8 @@ jobs:
         
     - name: Run build
       working-directory: scatter/next-app
+      env:
+        REPORT: example-polis
       run: npm run build
 
     - name: Run tests

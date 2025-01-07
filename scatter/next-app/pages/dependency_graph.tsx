@@ -1,7 +1,7 @@
 import React from 'react'
-import backlogTasks from '@/data/backlogTasks.json'
 import TaskDependencyGraph from '@/components/TaskDependencyGraph'
 import { TaskData } from '@/types/graph'
+import backlogTasks from '@/data/backlogTasks.json'
 
 const DependencyGraphPage: React.FC = () => {
   return (
